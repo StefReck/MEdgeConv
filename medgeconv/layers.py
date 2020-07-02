@@ -162,7 +162,6 @@ class GetEdgeFeatures(ks.layers.Layer):
     def get_config(self):
         config = super().get_config()
         config["next_neighbors"] = self.next_neighbors
-        config["mapped"] = self.mapped
         return config
 
 

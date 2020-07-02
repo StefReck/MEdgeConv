@@ -5,16 +5,17 @@ Tensorflow functions for graph functionality.
 import tensorflow as tf
 
 
-def get_knn_from_points(points, k, is_valid=None):
+def get_knn_from_points(points, k, is_valid):
     """
-    Get the k nearest neighbors depending on distance (excluding points itself).
+    Get the k nearest neighbors depending on distance.
 
     Parameters
     ----------
     points : tf.Tensor
         shape (bs, n_points, n_features)
     k : int
-    is_valid : tf.Tensor, optional
+        Number of nearest neighbors (excluding self).
+    is_valid : tf.Tensor
         boolean or float tensor shape (bs, n_points).
 
     Returns
@@ -106,6 +107,24 @@ def pdist(points, take_sqrt=True, single_mode=False):
 
 
 def reduce_mean_valid(points, is_valid, divide_by_nodes=True):
+    """
+    Sum up or average over valid nodes.
+
+    Parameters
+    ----------
+    points : tf.Tensor
+        shape (bs, n_points, n_features)
+    is_valid : tf.Tensor
+        boolean or float tensor shape (bs, n_points).
+    divide_by_nodes : bool
+        If true, divide by number of valid nodes (= average).
+
+    Returns
+    -------
+    shape (bs, n_features)
+        For each feature, aggeregated over all valid nodes.
+
+    """
     is_valid = tf.cast(is_valid, points.dtype)
     # set node features of invalid nodes to 0
     valid_points = points * tf.expand_dims(is_valid, -1)
