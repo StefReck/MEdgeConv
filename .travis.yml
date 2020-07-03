@@ -4,6 +4,10 @@ python:
 
 install:
   - make dependencies
+  - pip install -U pytest pytest-cov codecov
 
 script:
   - make test
+
+after_success:
+  - codecov
