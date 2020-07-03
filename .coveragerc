@@ -1,0 +1,8 @@
+[run]
+source=medgeconv
+
+[report]
+include =
+    medgeconv/*
+omit =
+    tests/*

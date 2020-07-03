@@ -5,4 +5,4 @@ test:
 	pytest
 
 test-cov:
-	py.test --cov medgeconv/ --cov-report term-missing --cov-report html:reports/coverage
+	pytest --cov=./
