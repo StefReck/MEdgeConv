@@ -1,3 +1,0 @@
-# MEdgeConv
-
-WIP3
