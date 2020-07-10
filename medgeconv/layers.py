@@ -13,10 +13,17 @@ class EdgeConv:
     as a pseudo-block.
     Has a dense network as the kernel network.
 
-    Input:
-        (nodes, is_valid, coordinates)
-    Output:
-        (new_nodes, )
+    Input: (nodes, is_valid, coordinates)
+
+    nodes, shape (batchsize, n_nodes_max, n_features)
+        Node features of the graph, padded to fixed size.
+    is_valid, shape (batchsize, n_nodes_max)
+        1 for actual node, 0 for padded node.
+    coordinates, shape (batchsize, n_nodes_max, n_coords)
+        Features of each node used for calculating nearest
+        neighbors.
+
+    Output, shape (batchsize, n_nodes_max, units[-1])
 
     Parameters
     ----------
