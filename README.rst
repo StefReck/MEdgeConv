@@ -10,8 +10,9 @@ MEdgeConv
 An efficient tensorflow 2 implementation of the edge-convolution layer
 EdgeConv used in e.g. ParticleNet.
 
-The structure of the layer is as described in the ParticleNet paper
-https://arxiv.org/abs/1902.08570 . Graphs often have a varying number
+The structure of the layer is as described in 'ParticleNet: Jet Tagging
+via Particle Clouds'
+https://arxiv.org/abs/1902.08570. Graphs often have a varying number
 of nodes. Memory intensive operations in MEdgeConv
 are done only on the actual nodes, so this should be faster if the number of
 nodes varies greatly between graphs in the batch.
@@ -27,6 +28,7 @@ Use like this:
 .. code-block:: python
 
     import medgeconv
+
     nodes = medgeconv.EdgeConv(units=[64, 64, 64], next_neighbors=16)((nodes, is_valid, coordinates))
 
 
@@ -49,6 +51,7 @@ To pool in the end, use this:
 .. code-block:: python
 
     import medgeconv
+
     x = medgeconv.GlobalAvgValidPooling()((nodes, is_valid))
 
 
@@ -57,8 +60,10 @@ To load models, use the custom_objects:
 .. code-block:: python
 
     import medgeconv
-    load_model(path, custom_objects=medgeconv.custom_objects)
+
+    model = load_model(path, custom_objects=medgeconv.custom_objects)
 
 Remarks:
+
 - Batchsize has to be fixed (i.e. use Input(batch_size=bs, ...))
 - in nodes array, valid nodes have to come first, then the padded nodes
