@@ -40,38 +40,71 @@ class TestLayers(tf.test.TestCase):
         self.assertListEqual([batchsize, n_points, units[-1]], x.shape.as_list())
 
 
-class TestModelFunctionality(tf.test.TestCase):
+class TestEdgy(tf.test.TestCase):
     def setUp(self):
-        n_points, n_features, n_coords = 4, 5, 3
-        batchsize = 10
-        units = [5, 4]
-        inp_points = tf.keras.layers.Input((n_points, n_features),
-                                           batch_size=batchsize)
-        inp_valid = tf.keras.layers.Input((n_points,), batch_size=batchsize)
-        inp_coords = tf.keras.layers.Input((n_points, n_coords),
-                                           batch_size=batchsize)
-        inps = (inp_points, inp_valid, inp_coords)
+        self.n_points, self.n_features, self.n_coords = 5, 4, 3
+        self.batchsize = 2
+        self.units = [5, 2]
+        self.next_neighbors = 3
 
-        x = layers.EdgeConv(
-            units=units,
-            next_neighbors=3,
-            pooling="GlobalAvgValidPooling",
-            batchnorm_for_nodes=True)(inps)
-        self.model = tf.keras.Model(inps, x)
-        self.model.compile("sgd", "mse")
-        self.x = [
-            np.ones((batchsize, n_points, n_features)),  # points
-            np.ones((batchsize, n_points)),  # is_valid
-            np.ones((batchsize, n_points, n_coords)),  # coords
-        ]
-        self.y = np.zeros((batchsize, units[-1]))
+        inp_points = tf.keras.layers.Input((self.n_points, self.n_features), batch_size=self.batchsize)
+        inp_valid = tf.keras.layers.Input((self.n_points, ), batch_size=self.batchsize)
+        inp_coords = tf.keras.layers.Input((self.n_points, self.n_coords), batch_size=self.batchsize)
+        self.inps = (inp_points, inp_valid, inp_coords)
+        self.edge_layer = layers.EdgeConv(
+            units=self.units,
+            next_neighbors=self.next_neighbors,
+            kernel_initializer="ones",
+        )
+        x = self.edge_layer(self.inps)
+        self.model = tf.keras.Model(self.inps, x)
+
+        points = np.arange(
+            self.batchsize * self.n_points * self.n_features).reshape(
+            *self.model.input_shape[0]).astype("float32")
+        is_valid = np.ones((self.batchsize, self.n_points))
+        is_valid[:, -1] = 0
+        coords = points[:, :, :self.n_coords]
+        self.x = points, is_valid, coords
+        self.y = np.zeros((self.batchsize, self.n_points, self.units[-1]))
+
+    def test_output_shape(self):
+        self.assertTupleEqual(
+            self.model.output_shape,
+            (self.batchsize, self.n_points, self.units[-1]))
+
+    def test_output(self):
+        points = np.arange(
+            self.batchsize * self.n_points * self.n_features).reshape(
+            *self.model.input_shape[0]).astype("float32")
+        is_valid = np.ones((self.batchsize, self.n_points))
+        is_valid[:, -1] = 0
+        coords = points[:, :, :self.n_coords]
+
+        output = self.model.predict((points, is_valid, coords))
+        target = np.array([[
+            [5.9970026,   5.9970026],
+            [95.249084,  95.249084],
+            [281.07126, 281.07126],
+            [483.5435, 483.5435],
+            [0.,   0.]],
+
+            [[355.6873, 355.6873],
+            [558.15955, 558.15955],
+            [760.6317, 760.6317],
+            [963.10394, 963.10394],
+            [0.,   0.]]], dtype="float32")
+        np.testing.assert_almost_equal(target, output)
 
     def test_train(self):
+        self.model.compile("sgd", "mse")
         self.model.train_on_batch(x=self.x, y=self.y)
 
     def test_loading(self):
+        self.model.compile("sgd", "mse")
         with tempfile.TemporaryDirectory() as tempdir:
             path = os.path.join(tempdir, "temp.h5")
             tf.keras.models.save_model(self.model, path)
             loaded = tf.keras.models.load_model(
                 path, custom_objects=layers.custom_objects)
+            loaded.train_on_batch(x=self.x, y=self.y)

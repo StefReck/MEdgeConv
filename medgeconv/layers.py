@@ -27,38 +27,30 @@ class EdgeConv:
     next_neighbors : int
         How many next neighbors to construct the edge features with for
         each node.
+    kernel_initializer : str
+    activation : str
     shortcut : bool
         Add a shortcut connection between input and output?
-    batchnorm_for_nodes : bool
-        Add a batchnormalization to the nodes input? Useful if this is the
-        first layer in the network.
-    pooling : str or None
-        Which pooling operation to use after the block, if any.
-        Currently available: GlobalAvgValidPooling
 
     """
     def __init__(self, units,
                  next_neighbors=16,
-                 shortcut=True,
-                 batchnorm_for_nodes=False,
-                 pooling=None):
+                 kernel_initializer="glorot_uniform",
+                 activation="relu",
+                 shortcut=True):
         self.units = units
         self.next_neighbors = next_neighbors
-        self.batchnorm_for_nodes = batchnorm_for_nodes
+        self.kernel_initializer = kernel_initializer
+        self.activation = activation
         self.shortcut = shortcut
-        self.pooling = pooling
 
-        self.pool_types = {
-            "GlobalAvgValidPooling": GlobalAvgValidPooling,
-        }
-
-        self.kernel_network = lambda xi_xj: kernel_nn(xi_xj, units=self.units)
+        self.kernel_network = lambda xi_xj: kernel_nn(
+            xi_xj, units=self.units,
+            kernel_initializer=self.kernel_initializer,
+            activation=self.activation)
 
     def __call__(self, inputs):
         nodes, is_valid, coordinates = inputs
-
-        if self.batchnorm_for_nodes:
-            nodes = layers.BatchNormalization()(nodes)
 
         # get central and neighbour point features for each edge
         # between neighbours, defined by coordinates
@@ -76,15 +68,13 @@ class EdgeConv:
 
         if self.shortcut:
             sc, _ = util.flatten_graphs(nodes, is_valid)
-            sc = ks.layers.Dense(self.units[-1], use_bias=False)(sc)
+            sc = ks.layers.Dense(
+                self.units[-1], use_bias=False,
+                kernel_initializer=self.kernel_initializer)(sc)
             sc = ks.layers.BatchNormalization()(sc)
-            x = ks.layers.Activation("relu")(sc + x)
+            x = ks.layers.Activation(self.activation)(sc + x)
 
         x = rev(x)
-        if self.pooling is not None:
-            pool_op = self.pool_types[self.pooling]
-            x = pool_op()((x, is_valid))
-
         return x
 
     def get_edges(self, xi_xj):
@@ -101,17 +91,15 @@ class EdgeConv:
         return x
 
 
-def kernel_nn(x, units=(16, 16, 16)):
-    """
-    The kernel network used on each edge of the graph.
-
-    """
+def kernel_nn(x, units, activation="relu", kernel_initializer='glorot_uniform'):
+    """ The kernel network used on each edge of the graph. """
     if isinstance(units, int):
         units = [units]
     for uts in units:
-        x = layers.Dense(uts, use_bias=False, activation=None)(x)
+        x = layers.Dense(uts, use_bias=False, activation=None,
+                         kernel_initializer=kernel_initializer)(x)
         x = layers.BatchNormalization()(x)
-        x = layers.Activation("relu")(x)
+        x = layers.Activation(activation)(x)
     return x
 
 
