@@ -112,7 +112,7 @@ class TestEdgy(tf.test.TestCase):
     def test_with_pooling(self):
         x = layers.GlobalAvgValidPooling()((self.edge_out, self.inps[1]))
         model = tf.keras.Model(self.inps, x)
-        output = model.predict_on_batch(x)
+        output = model.predict_on_batch(self.x)
         target = np.array([
             [216.46521, 216.46521],
             [659.3956, 659.3956]], dtype="float32")
