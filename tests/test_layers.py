@@ -56,8 +56,8 @@ class TestEdgy(tf.test.TestCase):
             next_neighbors=self.next_neighbors,
             kernel_initializer="ones",
         )
-        x = self.edge_layer(self.inps)
-        self.model = tf.keras.Model(self.inps, x)
+        self.edge_out = self.edge_layer(self.inps)
+        self.model = tf.keras.Model(self.inps, self.edge_out)
 
         points = np.arange(
             self.batchsize * self.n_points * self.n_features).reshape(
@@ -108,3 +108,12 @@ class TestEdgy(tf.test.TestCase):
             loaded = tf.keras.models.load_model(
                 path, custom_objects=layers.custom_objects)
             loaded.train_on_batch(x=self.x, y=self.y)
+
+    def test_with_pooling(self):
+        x = layers.GlobalAvgValidPooling()((self.edge_out, self.inps[1]))
+        model = tf.keras.Model(self.inps, x)
+        output = model.predict_on_batch(x)
+        target = np.array([
+            [216.46521, 216.46521],
+            [659.3956, 659.3956]], dtype="float32")
+        np.testing.assert_almost_equal(target, output)
