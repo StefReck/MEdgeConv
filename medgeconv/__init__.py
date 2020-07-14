@@ -1,1 +1,1 @@
-from .layers import EdgeConv, custom_objects
+from .layers import EdgeConv, GlobalAvgValidPooling, custom_objects
