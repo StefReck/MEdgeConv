@@ -94,7 +94,7 @@ class TestEdgy(tf.test.TestCase):
             [760.6317, 760.6317],
             [963.10394, 963.10394],
             [0.,   0.]]], dtype="float32")
-        np.testing.assert_almost_equal(target, output)
+        np.testing.assert_almost_equal(target, output, decimal=4)
 
     def test_train(self):
         self.model.compile("sgd", "mse")
