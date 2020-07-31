@@ -29,6 +29,68 @@ def get_knn_from_points(points, k, is_valid):
     return tf.map_fn(func, [points, is_valid], dtype="int32")
 
 
+def get_edges_from_points_flat(points_flat, k, is_valid):
+    """
+    Calculate xi, xi - xj from the flattened points.
+
+    Parameters
+    ----------
+    points_flat : tf.Tensor
+        Shape (None, n_features).
+    k : int
+        Number of nearest neighbors (excluding self).
+    is_valid : tf.Tensor
+        boolean or float tensor shape (bs, n_points).
+
+    Returns
+    -------
+    tf.Tensor
+        Shape (None, k, n_features*2).
+
+    """
+    def func(args):
+        graph = args
+        euc_dist = pdist(graph, single_mode=True)
+        knn = tf.math.top_k(-euc_dist, k=k + 1)[1][:, 1:]
+        return knn
+    # Shape (batchsize, None, n_features)
+    points_ragged = tf.RaggedTensor.from_row_lengths(
+        points_flat, tf.cast(tf.reduce_sum(is_valid, axis=-1), "int32"))
+    # shape (batchsize, None, k)
+    knn_ragged = tf.map_fn(
+        func,
+        points_ragged,
+        fn_output_signature=tf.RaggedTensorSpec(
+            shape=(None, k),
+            dtype="int32",
+            ragged_rank=0,
+            row_splits_dtype=tf.dtypes.int32)
+    )
+
+    point_central = tf.tile(
+        tf.expand_dims(points_ragged, axis=-2),
+        [1, 1, k, 1])
+    point_neighbors = tf.gather(
+        points_ragged, knn_ragged, batch_dims=1)
+    # shape (batchsize, None, k, n_features*2)
+    edge_features_ragged = tf.concat(
+        [point_central, point_central - point_neighbors], axis=-1)
+
+    edge_features_flat = edge_features_ragged.merge_dims(0, 1)
+    # x.set_shape(tf.concat([is_valid.shape, points_flat.shape[1:]], -1))
+    return edge_features_flat
+
+
+def _temp_comp(points, k, is_valid):
+    knn = get_knn_from_points(
+        points,
+        k,
+        is_valid=is_valid,
+    )
+    xi_xj = get_xixj_knn(points, knn=knn, k=k)
+    return xi_xj
+
+
 def _get_knn_map(args, k):
     """ Get knn for one graph at a time. Only operates on real nodes. """
     graph, val = args
