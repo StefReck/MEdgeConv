@@ -120,18 +120,22 @@ def benchmark(warmup_batches=10, profile_batches=10, n_loops=100, tensorboarding
     return times
 
 
-def _get_inp(batch_size=None):
-    points = tf.keras.Input((20, 5), batch_size=batch_size)
-    is_valid = tf.keras.Input((20, ), batch_size=batch_size)
-    coords = tf.keras.Input((20, 3), batch_size=batch_size)
+def _get_inp(batch_size=2):
+    points = tf.keras.Input((5, 2), batch_size=batch_size)
+    is_valid = tf.keras.Input((5, ), batch_size=batch_size)
+    coords = tf.keras.Input((5, 2), batch_size=batch_size)
+    return points, is_valid, coords
+
+
+def _get_inp_numpy(batch_size=2):
+    points = np.arange(0, batch_size*5*2, dtype="float32").reshape((batch_size, 5, 2))
+    is_valid = np.array([[1, 1, 1, 1, 1], [1, 1, 1, 0, 0]], dtype="float32")
+    coords = points
     return points, is_valid, coords
 
 
 def _get_inp_const(batch_size=2):
-    points = tf.ones((batch_size, 5, 2))
-    is_valid = tf.constant([[1, 1, 1, 1, 1], [1, 1, 1, 0, 0]], dtype="float32")
-    coords = tf.ones((batch_size, 5, 2))
-    return points, is_valid, coords
+    return [tf.constant(x) for x in _get_inp_numpy(batch_size)]
 
 
 if __name__ == '__main__':

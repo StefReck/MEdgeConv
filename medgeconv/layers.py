@@ -44,14 +44,12 @@ class EdgeConv:
                  next_neighbors=16,
                  kernel_initializer="glorot_uniform",
                  activation="relu",
-                 shortcut=True,
-                 _experimental=False):
+                 shortcut=True):
         self.units = units
         self.next_neighbors = next_neighbors
         self.kernel_initializer = kernel_initializer
         self.activation = activation
         self.shortcut = shortcut
-        self._experimental = _experimental
 
         self.kernel_network = lambda xi_xj: kernel_nn(
             xi_xj, units=self.units,
@@ -60,9 +58,6 @@ class EdgeConv:
 
     def __call__(self, inputs):
         nodes, is_valid, coordinates = inputs
-
-        if self._experimental:
-            x, rev = util.flatten_graphs(x, is_valid)
 
         # get central and neighbour point features for each edge
         # between neighbours, defined by coordinates

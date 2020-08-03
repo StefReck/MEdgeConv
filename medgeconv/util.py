@@ -29,6 +29,61 @@ def get_knn_from_points(points, k, is_valid):
     return tf.map_fn(func, [points, is_valid], dtype="int32")
 
 
+def get_knn_from_disjoint(points_flat, k, is_valid):
+    """ Return shape (None, k). """
+    def func(args):
+        graph = args
+        euc_dist = pdist(graph, single_mode=True)
+        knn = tf.math.top_k(-euc_dist, k=k + 1)[1][:, 1:]
+        return knn
+
+    is_valid_int = tf.cast(is_valid, "int32")
+    n_valid_nodes = tf.reduce_sum(is_valid_int, axis=-1, keepdims=True)
+
+    # Shape (batchsize, None, n_features)
+    points_ragged = tf.RaggedTensor.from_row_lengths(
+        points_flat, tf.squeeze(n_valid_nodes), validate=False)
+    # shape (batchsize, None, k)
+    knn_ragged = tf.map_fn(
+        func,
+        points_ragged,
+        fn_output_signature=tf.RaggedTensorSpec(
+            shape=(None, k),
+            dtype="int32",
+            ragged_rank=0,
+            row_splits_dtype=tf.dtypes.int32)
+    )
+    # shape (None, k)
+    knn_flat = knn_ragged.merge_dims(0, 1)
+
+    graph_indices = tf.gather_nd(
+        is_valid_int * tf.cumsum(n_valid_nodes, exclusive=True),
+        tf.where(is_valid == 1))
+
+    return knn_flat + tf.expand_dims(graph_indices, -1)
+
+
+def get_xixj_disjoint(points_flat, knn_flat, k):
+    """
+    Given points of shape (bs, n_points, n_dims), get
+    two matrices with shape (bs, n_points, k, n_dims).
+
+    --> [?, i, j] desribes the edge between points i and j.
+    The first matrix is xi, i.e. for each edge the central point
+    The 2nd matrix is xj, i.e. for each edge the other point.
+
+    """
+    point_central = tf.tile(
+        tf.expand_dims(points_flat, axis=-2),
+        [1, k, 1]
+    )
+    point_cloud_neighbors = tf.gather(points_flat, knn_flat)
+
+    return point_central, point_cloud_neighbors
+
+
+
+
 def get_edges_from_points_flat(points_flat, k, is_valid):
     """
     Calculate xi, xi - xj from the flattened points.
@@ -55,7 +110,7 @@ def get_edges_from_points_flat(points_flat, k, is_valid):
         return knn
     # Shape (batchsize, None, n_features)
     points_ragged = tf.RaggedTensor.from_row_lengths(
-        points_flat, tf.cast(tf.reduce_sum(is_valid, axis=-1), "int32"))
+        points_flat, tf.cast(tf.reduce_sum(is_valid, axis=-1), "int32"), validate=False)
     # shape (batchsize, None, k)
     knn_ragged = tf.map_fn(
         func,
@@ -66,6 +121,8 @@ def get_edges_from_points_flat(points_flat, k, is_valid):
             ragged_rank=0,
             row_splits_dtype=tf.dtypes.int32)
     )
+    # shape (None, k)
+    knn_flat = knn_ragged.merge_dims(0, 1)
 
     point_central = tf.tile(
         tf.expand_dims(points_ragged, axis=-2),
@@ -201,6 +258,41 @@ def reduce_mean_valid(points, is_valid, divide_by_nodes=True):
         return tf.reduce_mean(valid_points, axis=1)
 
 
+def reduce_mean_valid_disjoint(points_disjoint, is_valid):
+    """
+    Average over valid nodes.
+
+    Parameters
+    ----------
+    points_disjoint : tf.Tensor
+        shape (None, n_features)
+    is_valid : tf.Tensor
+        boolean or float tensor shape (bs, n_points).
+
+    Returns
+    -------
+    shape (bs, n_features)
+        For each feature, aggeregated over all valid nodes.
+
+    """
+    is_valid = tf.cast(is_valid, points_disjoint.dtype)
+
+    placeholder = tf.tile(
+        tf.expand_dims(tf.zeros_like(is_valid), -1),
+        (1, 1, points_disjoint.shape[-1])
+    )
+    points_dense = tf.tensor_scatter_nd_update(
+        placeholder, tf.where(is_valid == 1), points_disjoint)
+
+    # number of valid nodes in each batch
+    n_valid_nodes = tf.reduce_sum(is_valid, axis=-1, keepdims=True)
+    # sum over all nodes
+    summed_nodes = tf.reduce_sum(points_dense, axis=-2)
+    # divide the sum by the number of valid nodes per feature
+    return summed_nodes / tf.maximum(n_valid_nodes, tf.keras.backend.epsilon())
+
+
+
 def flatten_graphs(nodes, is_valid):
     """
     Flatten node and batch dimension and remove non-existing nodes from
@@ -236,3 +328,17 @@ def flatten_graphs(nodes, is_valid):
             empty, valid_indices, flat_nodes)
 
     return flattened, reverse
+
+
+def dense_to_ragged(points, is_valid):
+    """ (batchsize, n_points, n_features) --> (batchsize, None, n_features) """
+    n_valid_nodes = tf.reduce_sum(tf.cast(is_valid, "int32"), -1)
+    n_invalid_nodes = tf.ones_like(n_valid_nodes) * points.shape[1] - n_valid_nodes
+    row_lengths = tf.reshape(tf.stack([n_valid_nodes, n_invalid_nodes], -1), [-1])
+    points_flat = tf.reshape(points, [-1, points.shape[-1]])
+    ragged = tf.RaggedTensor.from_row_lengths(points_flat, row_lengths, validate=False)
+    return ragged[::2]
+
+
+def dense_to_sparse(points, is_valid):
+    return tf.sparse.from_dense(points * tf.expand_dims(is_valid, -1))
