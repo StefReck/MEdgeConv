@@ -50,7 +50,8 @@ Inputs to EdgeConv are 3 dense tensors: nodes, is_valid and coordinates
     neighbors.
 
 By using ``to_disjoint = True``, the dense tensors get transformed to
-the disjoint union. ``pooling = True`` will attach a node-wise global
+the disjoint union. The output is also disjoint.
+``pooling = True`` will attach a node-wise global
 average pooling layer in the end.
 
 
@@ -75,7 +76,7 @@ A full model could look like this:
         pooling=True)(x)
 
     output = tf.keras.layers.Dense(2)(x)
-    model = tf.keras.Model(inp, x)
+    model = tf.keras.Model(inp, output)
 
 
 To load models, use the custom_objects:
