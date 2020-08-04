@@ -2,6 +2,7 @@ import os
 import tempfile
 import tensorflow as tf
 import numpy as np
+import medgeconv
 from medgeconv import layers
 
 
@@ -106,7 +107,7 @@ class TestEdgy(tf.test.TestCase):
             path = os.path.join(tempdir, "temp.h5")
             tf.keras.models.save_model(self.model, path)
             loaded = tf.keras.models.load_model(
-                path, custom_objects=layers.custom_objects)
+                path, custom_objects=medgeconv.custom_objects)
             loaded.train_on_batch(x=self.x, y=self.y)
 
     def test_with_pooling(self):

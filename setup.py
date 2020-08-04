@@ -8,7 +8,7 @@ setup(
     name='medgeconv',
     author='Stefan Reck',
     author_email='stefan.reck@fau.de',
-    version='0.1',
+    version='0.2',
     install_requires=requirements,
     packages=["medgeconv"],
 )

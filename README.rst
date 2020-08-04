@@ -13,9 +13,10 @@ EdgeConv used in e.g. ParticleNet.
 The structure of the layer is as described in 'ParticleNet: Jet Tagging
 via Particle Clouds'
 https://arxiv.org/abs/1902.08570. Graphs often have a varying number
-of nodes. Memory intensive operations in MEdgeConv
-are done only on the actual nodes, so this should be faster if the number of
-nodes varies greatly between graphs in the batch.
+of nodes. By making use of the disjoint unioon of graphs in a batch,
+memory intensive operations in this implementation
+are done only on the actual nodes. This is faster if the number of
+nodes varies between graphs in the batch.
 
 
 Install e.g. via::
@@ -23,16 +24,20 @@ Install e.g. via::
     pip install git+https://github.com/StefReck/MEdgeConv.git#egg=MEdgeConv
 
 
-Use like this:
+Use e.g. like this:
 
 .. code-block:: python
 
     import medgeconv
 
-    nodes = medgeconv.EdgeConv(units=[64, 64, 64], next_neighbors=16)((nodes, is_valid, coordinates))
+    nodes = medgeconv.DisjointEdgeConvBlock(
+        units=[64, 64, 64],
+        next_neighbors=16,
+        to_disjoint=True,
+        pooling=True)((nodes, is_valid, coordinates))
 
 
-Inputs to EdgeConv are 3 tensors: nodes, is_valid and coordinates
+Inputs to EdgeConv are 3 dense tensors: nodes, is_valid and coordinates
 
 - nodes, shape (batchsize, n_nodes_max, n_features)
     Node features of the graph, padded to fixed size.
@@ -44,15 +49,33 @@ Inputs to EdgeConv are 3 tensors: nodes, is_valid and coordinates
     Features of each node used for calculating nearest
     neighbors.
 
-Output is a tensor with shape (batchsize, n_nodes_max, units[-1])
+By using ``to_disjoint = True``, the dense tensors get transformed to
+the disjoint union. ``pooling = True`` will attach a node-wise global
+average pooling layer in the end.
 
-To pool in the end, use this:
+
+A full model could look like this:
 
 .. code-block:: python
 
+    import tensorflow as tf
     import medgeconv
 
-    x = medgeconv.GlobalAvgValidPooling()((nodes, is_valid))
+    inp = (nodes, is_valid, coordinates)
+    x = medgeconv.DisjointEdgeConvBlock(
+        units=[64, 64, 64],
+        to_disjoint=True,
+        batchnorm_for_nodes=True)(inp)
+
+    x = medgeconv.DisjointEdgeConvBlock(
+        units=[128, 128, 128])(x)
+
+    x = medgeconv.DisjointEdgeConvBlock(
+        units=[256, 256, 256],
+        pooling=True)(x)
+
+    output = tf.keras.layers.Dense(2)(x)
+    model = tf.keras.Model(inp, x)
 
 
 To load models, use the custom_objects:
