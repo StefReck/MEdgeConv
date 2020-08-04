@@ -1,8 +1,8 @@
 import tensorflow as tf
-from . import layers_disjoint
+from . import layers, layers_disjoint
 
 
-class DisjointEdgeConvBlock(layers_disjoint.EdgeConvDisjoint):
+class DisjointEdgeConvBlock(layers_disjoint.DisjointEdgeConv):
     """
     DisjointEdgeConv with additional options as used in the ParticleNet
     paper.
@@ -49,6 +49,10 @@ class DisjointEdgeConvBlock(layers_disjoint.EdgeConvDisjoint):
 
 
 custom_objects = {
+    # m:
+    "GlobalAvgValidPooling": layers.GlobalAvgValidPooling,
+    "GetEdgeFeatures": layers.GetEdgeFeatures,
+    # disjoint:
     "GlobalAvgPoolingDisjoint": layers_disjoint.GlobalAvgPoolingDisjoint,
     "GetEdgeFeaturesDisjoint": layers_disjoint.GetEdgeFeaturesDisjoint,
     "DenseToDisjoint": layers_disjoint.DenseToDisjoint,

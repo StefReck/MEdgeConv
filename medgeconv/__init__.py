@@ -1,1 +1,2 @@
-from .layers import EdgeConv, GlobalAvgValidPooling, custom_objects
+from .layers import EdgeConv, GlobalAvgValidPooling
+from .appli import custom_objects, DisjointEdgeConvBlock

@@ -4,7 +4,7 @@ import tensorflow.keras.layers as layers
 from . import util_disjoint
 
 
-class EdgeConvDisjoint:
+class DisjointEdgeConv:
     """
     The EdgeConv layer like it is used in ParticleNet, implemented
     as a pseudo-block and expecting disjoint input.

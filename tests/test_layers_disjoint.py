@@ -2,7 +2,7 @@ import os
 import tempfile
 import tensorflow as tf
 import numpy as np
-from medgeconv import appli
+import medgeconv
 
 
 class TestEdgy(tf.test.TestCase):
@@ -16,7 +16,7 @@ class TestEdgy(tf.test.TestCase):
         inp_valid = tf.keras.layers.Input((self.n_points, ), batch_size=self.batchsize)
         inp_coords = tf.keras.layers.Input((self.n_points, self.n_coords), batch_size=self.batchsize)
         self.inps = (inp_points, inp_valid, inp_coords)
-        self.edge_layer = appli.DisjointEdgeConvBlock(
+        self.edge_layer = medgeconv.DisjointEdgeConvBlock(
             units=self.units,
             next_neighbors=self.next_neighbors,
             kernel_initializer="ones",
@@ -70,11 +70,11 @@ class TestEdgy(tf.test.TestCase):
             path = os.path.join(tempdir, "temp.h5")
             tf.keras.models.save_model(self.model, path)
             loaded = tf.keras.models.load_model(
-                path, custom_objects=appli.custom_objects)
+                path, custom_objects=medgeconv.custom_objects)
             loaded.train_on_batch(x=self.x, y=self.y)
 
     def test_with_pooling(self):
-        edge_out = appli.DisjointEdgeConvBlock(
+        edge_out = medgeconv.DisjointEdgeConvBlock(
             units=self.units,
             next_neighbors=self.next_neighbors,
             kernel_initializer="ones",

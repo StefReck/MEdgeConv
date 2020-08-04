@@ -186,10 +186,3 @@ class GlobalAvgValidPooling(ks.layers.Layer):
         config = super().get_config()
         config["divide_by_nodes"] = self.divide_by_nodes
         return config
-
-
-custom_objects = {
-    "GlobalAvgValidPooling": GlobalAvgValidPooling,
-    "GetEdgeFeatures": GetEdgeFeatures,
-}
-
