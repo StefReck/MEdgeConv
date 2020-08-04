@@ -40,7 +40,7 @@ class DisjointEdgeConvBlock(layers_disjoint.EdgeConvDisjoint):
         if self.batchnorm_for_nodes:
             nodes = tf.keras.layers.BatchNormalization()(nodes)
 
-        nodes = super()((nodes, is_valid, coordinates))
+        nodes = super().__call__((nodes, is_valid, coordinates))
 
         if self.pooling:
             return layers_disjoint.GlobalAvgPoolingDisjoint()((nodes, is_valid))
