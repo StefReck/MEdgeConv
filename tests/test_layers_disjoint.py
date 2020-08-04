@@ -3,42 +3,6 @@ import tempfile
 import tensorflow as tf
 import numpy as np
 import medgeconv
-from medgeconv import layers
-
-
-class TestLayers(tf.test.TestCase):
-    def test_global_average_valid_pooling(self):
-        n_points, n_features = 4, 3
-        inp_points = tf.keras.layers.Input((n_points, n_features))
-        inp_valid = tf.keras.layers.Input((n_points, ))
-
-        x = layers.GlobalAvgValidPooling()((inp_points, inp_valid))
-        self.assertListEqual([None, n_features], x.shape.as_list())
-
-    def test_get_edge_features(self):
-        n_points, n_features, n_coords = 4, 5, 3
-        batchsize = 10
-        k = 3
-        inp_points = tf.keras.layers.Input((n_points, n_features), batch_size=batchsize)
-        inp_valid = tf.keras.layers.Input((n_points, ), batch_size=batchsize)
-        inp_coords = tf.keras.layers.Input((n_points, n_coords), batch_size=batchsize)
-
-        x = layers.GetEdgeFeatures(next_neighbors=k)((inp_points, inp_valid, inp_coords))
-        target_shape = [batchsize, n_points, k, n_features]
-        self.assertListEqual(target_shape, x[0].shape.as_list())
-        self.assertListEqual(target_shape, x[1].shape.as_list())
-
-    def test_edge_conv(self):
-        n_points, n_features, n_coords = 4, 5, 3
-        batchsize = 10
-        units = [5, 4]
-        inp_points = tf.keras.layers.Input((n_points, n_features), batch_size=batchsize)
-        inp_valid = tf.keras.layers.Input((n_points, ), batch_size=batchsize)
-        inp_coords = tf.keras.layers.Input((n_points, n_coords), batch_size=batchsize)
-
-        x = layers.EdgeConv(units=units, next_neighbors=3)(
-            (inp_points, inp_valid, inp_coords))
-        self.assertListEqual([batchsize, n_points, units[-1]], x.shape.as_list())
 
 
 class TestEdgy(tf.test.TestCase):
@@ -52,12 +16,13 @@ class TestEdgy(tf.test.TestCase):
         inp_valid = tf.keras.layers.Input((self.n_points, ), batch_size=self.batchsize)
         inp_coords = tf.keras.layers.Input((self.n_points, self.n_coords), batch_size=self.batchsize)
         self.inps = (inp_points, inp_valid, inp_coords)
-        self.edge_layer = layers.EdgeConv(
+        self.edge_layer = medgeconv.DisjointEdgeConvBlock(
             units=self.units,
             next_neighbors=self.next_neighbors,
             kernel_initializer="ones",
+            to_disjoint=True
         )
-        self.edge_out = self.edge_layer(self.inps)
+        self.edge_out = self.edge_layer(self.inps)[0]
         self.model = tf.keras.Model(self.inps, self.edge_out)
 
         points = np.arange(
@@ -67,12 +32,11 @@ class TestEdgy(tf.test.TestCase):
         is_valid[:, -1] = 0
         coords = points[:, :, :self.n_coords]
         self.x = points, is_valid, coords
-        self.y = np.zeros((self.batchsize, self.n_points, self.units[-1]))
+        self.y = np.zeros((int(is_valid.sum()), self.units[-1]))
 
     def test_output_shape(self):
         self.assertTupleEqual(
-            self.model.output_shape,
-            (self.batchsize, self.n_points, self.units[-1]))
+            self.model.output_shape, (None, self.units[-1]))
 
     def test_output(self):
         points = np.arange(
@@ -83,18 +47,17 @@ class TestEdgy(tf.test.TestCase):
         coords = points[:, :, :self.n_coords]
 
         output = self.model.predict((points, is_valid, coords))
-        target = np.array([[
+        target = np.array([
             [5.9970026,   5.9970026],
             [95.249084,  95.249084],
             [281.07126, 281.07126],
             [483.5435, 483.5435],
-            [0.,   0.]],
 
-            [[355.6873, 355.6873],
+            [355.6873, 355.6873],
             [558.15955, 558.15955],
             [760.6317, 760.6317],
-            [963.10394, 963.10394],
-            [0.,   0.]]], dtype="float32")
+            [963.10394, 963.10394]
+        ], dtype="float32")
         np.testing.assert_almost_equal(target, output, decimal=4)
 
     def test_train(self):
@@ -111,8 +74,14 @@ class TestEdgy(tf.test.TestCase):
             loaded.train_on_batch(x=self.x, y=self.y)
 
     def test_with_pooling(self):
-        x = layers.GlobalAvgValidPooling()((self.edge_out, self.inps[1]))
-        model = tf.keras.Model(self.inps, x)
+        edge_out = medgeconv.DisjointEdgeConvBlock(
+            units=self.units,
+            next_neighbors=self.next_neighbors,
+            kernel_initializer="ones",
+            to_disjoint=True,
+            pooling=True,
+        )(self.inps)
+        model = tf.keras.Model(self.inps, edge_out)
         output = model.predict_on_batch(self.x)
         target = np.array([
             [216.46521, 216.46521],
