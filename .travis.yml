@@ -11,3 +11,11 @@ script:
 
 after_success:
   - codecov
+
+deploy:
+  provider: pypi
+  username: $TWINE_USERNAME
+  password: $TWINE_PASSWORD
+  on:
+    tags: true
+    all_branches: true
