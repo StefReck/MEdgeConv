@@ -18,4 +18,3 @@ deploy:
   password: $TWINE_PASSWORD
   on:
     tags: true
-    all_branches: true

@@ -17,12 +17,13 @@ def get_knn_from_disjoint(nodes, k, is_valid):
     Returns
     -------
     shape (None, k)
-        int32, the index of which points are the nearest neighbors.
+        int32, for each point, the indices of the points that are the
+        nearest neighbors.
 
     """
     def func(args):
         graph = args
-        euc_dist = pdist(graph, single_mode=True)
+        euc_dist = pdist(graph, single_mode=True, take_sqrt=False)
         return tf.math.top_k(-euc_dist, k=k + 1)[1][:, 1:]
 
     n_valid_nodes = tf.reduce_sum(is_valid, axis=-1, keepdims=True)
@@ -88,21 +89,36 @@ def pdist(points, take_sqrt=True, single_mode=False):
 
 def get_xixj_disjoint(nodes, knn, k):
     """
-    Given points of shape (None, n_dims), get
-    two matrices with shape (None, k, n_dims).
+    Get the features of each edge in the graph.
 
-    --> [?, i, j] desribes the edge between points i and j.
-    The first matrix is xi, i.e. for each edge the central point
-    The 2nd matrix is xj, i.e. for each edge the other point.
+    Paramters
+    ---------
+    nodes : tf.Tensor
+        shape (None, n_features)
+    knn : tf.Tensor
+        shape (None, k)
+        int32, for each point, the indices of the points that are the
+        nearest neighbors.
+    k : int
+        Number of nearest neighbors (excluding self).
+
+    Returns
+    -------
+    tuple
+        Two Tensors with shape (None, k, n_features).
+        --> [?, i, j] desribes the edge between points i and j.
+        The first matrix is xi, i.e. for each edge the central point
+        The 2nd matrix is xj, i.e. for each edge the other point.
 
     """
     nodes_central = tf.tile(
         tf.expand_dims(nodes, axis=-2),
         [1, k, 1]
     )
+
     # TODO this produces a 'Converting sparse IndexedSlices to a dense Tensor
-    #  of unknown shape.' warning. Thats because points_flat has an unknown shape
-    #  (None, n_dims), along first axis is gathered.
+    #  of unknown shape.' warning. Thats because nodes has an unknown shape
+    #  (None, n_features), along first axis is gathered.
     nodes_neighbors = tf.gather(nodes, knn)
 
     return nodes_central, nodes_neighbors

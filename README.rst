@@ -7,6 +7,9 @@ MEdgeConv
 .. image:: https://codecov.io/gh/StefReck/MEdgeConv/branch/master/graph/badge.svg
     :target: https://codecov.io/gh/StefReck/MEdgeConv
 
+.. image:: https://badge.fury.io/py/medgeconv.svg
+    :target: https://badge.fury.io/py/medgeconv
+
 An efficient tensorflow 2 implementation of the edge-convolution layer
 EdgeConv used in e.g. ParticleNet.
 
