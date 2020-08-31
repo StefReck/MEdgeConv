@@ -20,12 +20,21 @@ class DisjointEdgeConvBlock(layers_disjoint.DisjointEdgeConv):
         Has to be used if this is the last layer.
 
     """
-    def __init__(self, *args,
+    def __init__(self, units,
+                 next_neighbors,
+                 kernel_initializer="glorot_uniform",
+                 activation="relu",
+                 shortcut=True,
                  to_disjoint=False,
                  batchnorm_for_nodes=False,
-                 pooling=False,
-                 **kwargs):
-        super().__init__(*args, **kwargs)
+                 pooling=False):
+        super().__init__(
+            units=units,
+            next_neighbors=next_neighbors,
+            kernel_initializer=kernel_initializer,
+            activation=activation,
+            shortcut=shortcut,
+        )
         self.to_disjoint = to_disjoint
         self.batchnorm_for_nodes = batchnorm_for_nodes
         self.pooling = pooling
