@@ -12,7 +12,8 @@ setup(
     author='Stefan Reck',
     author_email='stefan.reck@fau.de',
     long_description=long_description,
-    version='0.2.1',
+    setup_requires=['setuptools_scm'],
+    use_scm_version=True,
     install_requires=requirements,
     packages=["medgeconv"],
 )
