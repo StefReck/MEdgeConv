@@ -23,7 +23,6 @@ def get_knn_from_disjoint(nodes, k, is_valid):
     """
     def func(args):
         graph = args
-        # euc_dist has to be done via mapping, see bug3
         euc_dist = pdist(graph, single_mode=True, take_sqrt=False)
         return tf.math.top_k(-euc_dist, k=k + 1)[1][:, 1:]
 
@@ -42,9 +41,6 @@ def get_knn_from_disjoint(nodes, k, is_valid):
             ragged_rank=0,
             row_splits_dtype=tf.dtypes.int32),
     )
-    # knn_ragged.row_splits.set_shape(nodes_ragged.row_splits.shape)
-    # doesn't work (see bug1):
-    # tf.gather(nodes_ragged, knn_ragged, batch_dims=1)
 
     # shape (None, k)
     knn = knn_ragged.merge_dims(0, 1)
@@ -54,28 +50,6 @@ def get_knn_from_disjoint(nodes, k, is_valid):
         tf.where(is_valid == 1))
 
     return knn + tf.expand_dims(graph_indices, -1)
-
-
-def bug1():
-    # gather with ragged tensors does not work in graph mode, only in eager
-    params = tf.keras.Input((None, 1), batch_size=3, ragged=True)
-    indices = tf.keras.Input((None, 2), batch_size=3, ragged=True, dtype="int32")
-    tf.gather(params, indices, batch_dims=1)
-    # OperatorNotAllowedInGraphError: using a `tf.Tensor` as a Python `bool` is not allowed in Graph execution.
-    # Use Eager execution or decorate this function with @tf.function.
-
-    # this works though
-    # params = tf.ragged.constant([[[0], [1]], [[2], [3]], [[4], [5], [6]]], ragged_rank=1, dtype="float32")
-    # indices = tf.ragged.constant([[[0, 1], [0, 1]], [[0, 1], [0, 1]], [[0, 1], [0, 1], [0, 1]]], ragged_rank=1)
-
-
-def bug3():
-    # broadcasting of two ragged dims in parallel does not work
-    nodes_ragged = tf.ragged.constant(
-        [[[0, 1], [1, 2]], [[2, 3], [3, 4]], [[4, 5], [5, 6], [6, 7]]],
-        ragged_rank=1)  # shape (3, None, 2)
-    squared_d = tf.math.squared_difference(
-        tf.expand_dims(nodes_ragged, 1), tf.expand_dims(nodes_ragged, 2))
 
 
 def pdist(points, take_sqrt=True, single_mode=False):
@@ -107,14 +81,12 @@ def pdist(points, take_sqrt=True, single_mode=False):
         transp_axes = [0, 2, 1]
 
     x2 = tf.reduce_sum(tf.square(points), axis=-1, keepdims=True)
-    # x2_ragged = tf.expand_dims(tf.reduce_sum(nodes_ragged**2, axis=-1), -1)
 
-    # matmul doesnt work with ragged
     cross = tf.matmul(
       points,
       tf.transpose(points, transp_axes)
     )
-    # transpose doesnt work with ragged
+
     output = x2 - 2 * cross + tf.transpose(x2, transp_axes)
 
     if take_sqrt:
@@ -156,84 +128,8 @@ def get_xixj_disjoint(nodes, knn, k):
     #  of unknown shape.' warning. Thats because nodes has an unknown shape
     #  (None, n_features), along first axis is gathered.
     nodes_neighbors = tf.gather(nodes, knn)
-    # nodes_neighbors = gather_sparse(nodes, knn, k)
 
     return nodes_central, nodes_neighbors
-
-
-def gather_sparse(nodes, knn, k):
-    """
-    Like tf.gather, but avoid actually gathering on an unknown dimension.
-    Avoids the warning, but is still actually slower...
-
-    dense: warning, 1:22
-    sparse: no warning, 1:32
-
-    """
-    knn_64 = tf.cast(knn, "int64")
-    knn_flat = tf.keras.backend.flatten(knn_64)
-
-    base = tf.ones_like(knn_flat)
-    base_cumu = tf.cumsum(base, exclusive=True)
-    alternating = base_cumu % k
-    node_index = base_cumu // k
-    indices = tf.stack([node_index, alternating, knn_flat], axis=1)
-
-    knn_sparse = tf.sparse.SparseTensor(
-        indices=indices,
-        values=tf.cast(base, "float32"),
-        dense_shape=tf.cast(tf.concat([tf.shape(knn), tf.shape(knn)[:1]], axis=0), "int64")  # (None, k, None),
-    )
-    # Sparse matmul only works for rank 2 :-( (see bug2)
-    # tf.sparse.sparse_dense_matmul(knn_sparse, nodes)
-    # but i can reshape to 2d!:
-    sparse_flat = tf.sparse.reshape(
-        knn_sparse, tf.concat(([-1], tf.shape(knn_sparse)[-1:]), axis=0))
-    out = tf.reshape(
-        tf.sparse.sparse_dense_matmul(sparse_flat, nodes),
-        tf.concat([tf.shape(knn_sparse)[:1], [knn_sparse.shape[1]], nodes.shape[-1:]], axis=0)
-    )
-
-    # out = tf.matmul(tf.sparse.to_dense(knn_sparse), nodes)
-    return out
-
-
-def bug2():
-    # sparse matmul only works for rank 2 :-(
-    sp_a = tf.keras.Input((5, None), sparse=True)
-    b = tf.keras.Input((3, ))
-    tf.sparse.sparse_dense_matmul(sp_a, b)
-
-
-def temp():
-    import numpy as np
-
-    k = 3
-    knn_numpy = np.array([[0, 2, 1], [0, 1, 3], [3, 1, 0], [1, 3, 0]], dtype="int64")
-    nodes_numpy = np.array([[10, ], [11, ], [12, ], [13, ]], dtype="float32")
-
-    knn = tf.constant(knn_numpy)
-    nodes = tf.constant(nodes_numpy)
-
-    knn = tf.keras.Input((3,))
-    nodes = tf.keras.Input((1,))
-
-
-def temp_2():
-    import numpy as np
-
-    k = 2
-    nodes_numpy = np.array(
-        [[10, ], [11, ], [12, ], [13, ], [14, ], [15, ], [16, ]], dtype="float32")
-    is_valid_numpy = np.array(
-        [[1, 1, 1, 1,], [1, 1, 1, 0]], dtype="int32"
-    )
-
-    is_valid = tf.constant(is_valid_numpy)
-    nodes = tf.constant(nodes_numpy)
-
-    is_valid = tf.keras.Input((4,), batch_size=2, dtype="int32")
-    nodes = tf.keras.Input((1,))
 
 
 def reduce_mean_valid_disjoint(nodes, is_valid):
