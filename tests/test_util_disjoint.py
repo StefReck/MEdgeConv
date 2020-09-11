@@ -34,6 +34,14 @@ class TestTFFunctions(tf.test.TestCase):
         result = util_disjoint.get_knn_from_disjoint(points, k=2, is_valid=is_valid)
         self.assertAllEqual(result, target)
 
+    def test_get_knn_from_points_eager(self):
+        """ map_fn turns the func into a tf.function apparently """
+        tf.config.run_functions_eagerly(True)
+        try:
+            self.test_get_knn_from_points()
+        finally:
+            tf.config.run_functions_eagerly(False)
+
     def test_reduce_mean_valid(self):
         points = tf.constant([
             [1, 2], [3, 4],

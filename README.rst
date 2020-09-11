@@ -22,9 +22,9 @@ are done only on the actual nodes. This is faster if the number of
 nodes varies between graphs in the batch.
 
 
-Install e.g. via::
+Install via::
 
-    pip install git+https://github.com/StefReck/MEdgeConv.git#egg=MEdgeConv
+    pip install medgeconv
 
 
 Use e.g. like this:
@@ -52,10 +52,33 @@ Inputs to EdgeConv are 3 dense tensors: nodes, is_valid and coordinates
     Features of each node used for calculating nearest
     neighbors.
 
+Example for batchsize = 2, n_nodes_max = 4, n_features = 2:
+
+.. code-block:: python
+
+    nodes = np.array([
+       [[2., 4.],
+        [2., 6.],
+        [0., 0.],  # <-- these nodes are padded, their
+        [0., 0.]],  #           value doesn't matter
+
+       [[0., 2.],
+        [3., 7.],
+        [4., 0.],
+        [1., 2.]]])
+
+    is_valid = np.array([
+        [1, 1, 0, 0],  # <-- 0 defines these nodes as padded
+        [1, 1, 1, 1]])
+
+    coordinates = nodes
+
+
 By using ``to_disjoint = True``, the dense tensors get transformed to
-the disjoint union. The output is also disjoint.
+the disjoint union. The output is also disjoint, so this only needs to be
+done once.
 ``pooling = True`` will attach a node-wise global
-average pooling layer in the end.
+average pooling layer in the end, producing dense tensors again.
 
 
 A full model could look like this:

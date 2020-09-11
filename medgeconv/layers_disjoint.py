@@ -125,7 +125,7 @@ class GetEdgeFeaturesDisjoint(ks.layers.Layer):
 
     def call(self, inputs):
         nodes_disjoint, is_valid, coordinates_disjoint = inputs
-        # get the k nearest neighbours for each node (dont connect valid and invalid nodes)
+        # get the k nearest neighbours for each node
         knn_disjoint = util_disjoint.get_knn_from_disjoint(
             coordinates_disjoint,
             self.next_neighbors,

@@ -87,3 +87,14 @@ class TestEdgy(tf.test.TestCase):
             [216.46521, 216.46521],
             [659.3956, 659.3956]], dtype="float32")
         np.testing.assert_almost_equal(target, output)
+
+
+class RepeatInEager(TestEdgy):
+    """ Repeat the tests above in eager mode. Mostly to get the coverage right.
+    """
+    def setUp(self):
+        tf.config.run_functions_eagerly(True)
+        super().setUp()
+    
+    def tearDown(self):
+        tf.config.run_functions_eagerly(False)
