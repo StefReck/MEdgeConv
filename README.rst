@@ -16,7 +16,7 @@ EdgeConv used in e.g. ParticleNet.
 The structure of the layer is as described in 'ParticleNet: Jet Tagging
 via Particle Clouds'
 https://arxiv.org/abs/1902.08570. Graphs often have a varying number
-of nodes. By making use of the disjoint unioon of graphs in a batch,
+of nodes. By making use of the disjoint union of graphs in a batch,
 memory intensive operations in this implementation
 are done only on the actual nodes. This is faster if the number of
 nodes varies between graphs in the batch.
