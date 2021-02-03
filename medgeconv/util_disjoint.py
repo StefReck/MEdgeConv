@@ -34,7 +34,7 @@ def get_knn_from_disjoint(nodes, k, is_valid):
         message="one or more graphs in the batch had too few nodes for "
                 "k nearest neighbors calculation!"
     )
-    with tf.control_dependencies(assert_op):
+    with tf.control_dependencies([assert_op]):
         # Shape (batchsize, None, n_features)
         nodes_ragged = tf.RaggedTensor.from_row_lengths(
             nodes, tf.squeeze(n_valid_nodes), validate=False)
