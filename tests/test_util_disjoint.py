@@ -34,6 +34,18 @@ class TestTFFunctions(tf.test.TestCase):
         result = util_disjoint.get_knn_from_disjoint(points, k=2, is_valid=is_valid)
         self.assertAllEqual(result, target)
 
+    def test_get_knn_from_points_too_few_neighbors(self):
+        points = tf.constant([
+            [0, 0], [0, 3], [0, 2],
+            [1, 1], [4, 5], [5, 5], [1, 1.1],
+        ], dtype="float32")
+        is_valid = tf.constant([
+            [1, 1, 0, 0],
+            [1, 1, 1, 1],
+        ], dtype="int32")
+        with self.assertRaises(tf.errors.InvalidArgumentError):
+            util_disjoint.get_knn_from_disjoint(points, k=2, is_valid=is_valid)
+
     def test_get_knn_from_points_eager(self):
         """ map_fn turns the func into a tf.function apparently """
         tf.config.run_functions_eagerly(True)
