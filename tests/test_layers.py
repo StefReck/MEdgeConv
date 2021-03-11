@@ -102,6 +102,12 @@ class TestEdgy(tf.test.TestCase):
         self.model.train_on_batch(x=self.x, y=self.y)
 
     def test_loading(self):
+        """
+        TODO This raises
+         tensor_equals() missing 1 required positional argument: 'other'
+         in the line 'load_model', maybe because tf.2.4 requires stuff to be inside
+         keras layers. Maybe drop support?
+        """
         self.model.compile("sgd", "mse")
         with tempfile.TemporaryDirectory() as tempdir:
             path = os.path.join(tempdir, "temp.h5")
