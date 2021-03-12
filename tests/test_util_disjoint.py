@@ -3,21 +3,6 @@ from medgeconv import util_disjoint
 
 
 class TestTFFunctions(tf.test.TestCase):
-    def test_pdist(self):
-        points = tf.constant([
-            [[0, 0], [0, 1]],
-            [[1, 1], [4, 5]],
-            [[-1, -1], [-1, -1]],
-        ], dtype="float32")
-
-        target = tf.constant([
-            [[0, 1], [1, 0]],
-            [[0, 5], [5, 0]],
-            [[0, 0], [0, 0]],
-        ], dtype="float32")
-        result = util_disjoint.pdist(points)
-        self.assertAllClose(result, target)
-
     def test_get_knn_from_points(self):
         points = tf.constant([
             [0, 0], [0, 3], [0, 2],
