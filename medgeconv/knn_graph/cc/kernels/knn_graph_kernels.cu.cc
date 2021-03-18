@@ -28,6 +28,11 @@ __global__ void KnnGraphCudaKernel(
 
         for (int64_t n_y = y_start_idx + threadIdx.x; n_y < y_end_idx; n_y += THREADS) {
 
+            // initialize distances
+            for (int k_idx = 0; k_idx < K; k_idx++) {
+                dist_flat[n_y * K + k_idx] = 1.0e8;
+            }
+
             for (int n_x = y_start_idx; n_x < y_end_idx; n_x++) {
                 float tmp_dist = 0;
 

@@ -34,6 +34,11 @@ struct KnnGraphFunctor<CPUDevice, T> {
 
             for (int n_y = y_start_idx; n_y < y_end_idx; n_y += 1) {
 
+                // initialize distances
+                for (int k_idx = 0; k_idx < K; k_idx++) {
+                    dist_flat[n_y * K + k_idx] = 1.0e8;
+                }
+
                 for (int n_x = y_start_idx; n_x < y_end_idx; n_x++) {
                     float tmp_dist = 0;
 
@@ -93,21 +98,13 @@ class KnnGraphOp : public OpKernel {
             OP_REQUIRES_OK(context, context->allocate_output(0, flat_shape, &col));  // shape (n_nodes, k_ )
 
             Tensor* dist_p = NULL;
-            tensorflow::AllocatorAttributes pinned_allocator;
-            pinned_allocator.set_on_host(true);
-            pinned_allocator.set_gpu_compatible(true);
-            OP_REQUIRES_OK(context, context->allocate_output(1, flat_shape, &dist_p, pinned_allocator));
-
-            auto dist_flat = dist_p->flat<float>();
-            for (int i = 0; i < dist_flat.size(); i++) {
-                dist_flat(i) = 1e8;  // std::numeric_limits<float>::max()
-            }
+            OP_REQUIRES_OK(context, context->allocate_output(1, flat_shape, &dist_p));
 
             KnnGraphFunctor<Device, T>()(
                 context->eigen_device<Device>(),
                 x.flat<T>().data(),
                 ptr_x.flat<int>().data(),
-                dist_flat.data(),
+                dist_p->flat<float>().data(),
                 col->flat<int>().data(),
                 k_,
                 dim,
