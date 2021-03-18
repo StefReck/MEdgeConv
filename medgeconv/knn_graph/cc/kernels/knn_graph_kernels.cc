@@ -4,7 +4,6 @@
 
 #include "knn_graph.h"
 #include "tensorflow/core/framework/op_kernel.h"
-#include <iostream>
 
 namespace tensorflow {
 
@@ -90,8 +89,6 @@ class KnnGraphOp : public OpKernel {
             flat_shape.AddDim(n_nodes);
             flat_shape.AddDim(k_);
             const int batchsize = ptr_x.shape().dim_size(0)-1;
-
-            std::cout<<"kernel: "<<flat_shape<<" "<<n_nodes<<" "<<k_<<std::endl;
 
             // Create output tensors
             Tensor* col = NULL;
