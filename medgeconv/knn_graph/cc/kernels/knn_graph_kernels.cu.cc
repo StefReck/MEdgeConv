@@ -19,8 +19,7 @@ __global__ void KnnGraphCudaKernel(
         float* dist_flat,
         int* col_flat,
         int K,
-        int dim,
-        const int batchsize)
+        int dim)
     {
         const int64_t batch_idx = blockIdx.x;
 
@@ -67,7 +66,7 @@ struct KnnGraphFunctor<GPUDevice, T> {
 {
     int block_count = batchsize;
     KnnGraphCudaKernel<T><<<block_count, THREADS, 0, d.stream()>>>(
-        x_flat, ptr_x_flat, dist_flat, col_flat, K, dim, batchsize);
+        x_flat, ptr_x_flat, dist_flat, col_flat, K, dim);
 }
 };
 
