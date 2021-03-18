@@ -1,10 +1,14 @@
 import tensorflow as tf
 from tensorflow.python.framework import load_library
 from tensorflow.python.platform import resource_loader
+from tensorflow.python.framework import ops
 
 _knn_op_module = load_library.load_op_library(
     resource_loader.get_path_to_datafile('./_knn_graph_ops.so'))
 _knn_graph_op = _knn_op_module.knn_graph
+
+
+ops.NotDifferentiable("KnnGraph")
 
 
 def knn_graph(nodes, n_nodes_per_graph, k):

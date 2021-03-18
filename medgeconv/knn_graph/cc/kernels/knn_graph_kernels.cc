@@ -4,6 +4,7 @@
 
 #include "knn_graph.h"
 #include "tensorflow/core/framework/op_kernel.h"
+#include <iostream>
 
 namespace tensorflow {
 
@@ -80,12 +81,16 @@ class KnnGraphOp : public OpKernel {
 
             int64_t n_nodes = x.shape().dim_size(0);
             int dim = x.shape().dim_size(1);
-            TensorShape flat_shape({n_nodes * k_});
+            auto flat_shape = TensorShape();
+            flat_shape.AddDim(n_nodes);
+            flat_shape.AddDim(k_);
             const int batchsize = ptr_x.shape().dim_size(0)-1;
+
+            std::cout<<"kernel: "<<flat_shape<<" "<<n_nodes<<" "<<k_<<std::endl;
 
             // Create output tensors
             Tensor* col = NULL;
-            OP_REQUIRES_OK(context, context->allocate_output(0, flat_shape, &col));  // shape (n_nodes*k_, )
+            OP_REQUIRES_OK(context, context->allocate_output(0, flat_shape, &col));  // shape (n_nodes, k_ )
 
             Tensor* dist_p = NULL;
             tensorflow::AllocatorAttributes pinned_allocator;

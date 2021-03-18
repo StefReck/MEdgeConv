@@ -30,8 +30,7 @@ def get_knn_from_disjoint(nodes, k, is_valid):
                 "k nearest neighbors calculation!"
     )
     with tf.control_dependencies([assert_op]):
-        indices_flat, dists = knn_graph(nodes, n_valid_nodes, k+1)
-    indices = tf.reshape(indices_flat, (-1, k+1))
+        indices, dists = knn_graph(nodes, n_valid_nodes, k+1)
     return indices[:, 1:]
 
 

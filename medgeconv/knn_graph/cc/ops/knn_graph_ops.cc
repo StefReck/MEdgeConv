@@ -19,10 +19,7 @@ REGISTER_OP("KnnGraph")
 
         int k;
         TF_RETURN_IF_ERROR(c->GetAttr("k", &k));
-        shape_inference::DimensionHandle output_dim;  // n_nodes * k
-        c->Multiply(c->Dim(c->input(0), 0), k, &output_dim);
-        shape_inference::ShapeHandle output_shape = c->MakeShape({output_dim});
-
+        shape_inference::ShapeHandle output_shape = c->MakeShape({c->Dim(c->input(0), 0), k});
         c->set_output(0, output_shape);
         c->set_output(1, output_shape);
         return Status::OK();
