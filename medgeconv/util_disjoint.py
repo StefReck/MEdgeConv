@@ -95,7 +95,7 @@ def reduce_mean_valid_disjoint(nodes, is_valid):
 
 
 def get_graph_ids(is_valid):
-    """ Shape (None,). """
+    """ Shape (None,). To which graph each node belongs to."""
     return tf.gather_nd(
-        is_valid * tf.expand_dims(tf.range(is_valid.shape[0]), -1),
+        is_valid * tf.expand_dims(tf.range(tf.shape(is_valid)[0]), -1),
         tf.where(is_valid == 1))
