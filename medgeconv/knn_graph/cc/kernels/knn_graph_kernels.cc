@@ -31,14 +31,14 @@ struct KnnGraphFunctor<CPUDevice, T> {
             // node idx where this batch ends
             int y_end_idx = ptr_x_flat[batch_idx + 1];
 
-            for (int n_y = y_start_idx; n_y < y_end_idx; n_y += 1) {
+            for (int64_t n_y = y_start_idx; n_y < y_end_idx; n_y += 1) {
 
                 // initialize distances
                 for (int k_idx = 0; k_idx < K; k_idx++) {
-                    dist_flat[n_y * K + k_idx] = 1.0e8;
+                    dist_flat[n_y * K + k_idx] = 1.0e38;
                 }
 
-                for (int n_x = y_start_idx; n_x < y_end_idx; n_x++) {
+                for (int64_t n_x = y_start_idx; n_x < y_end_idx; n_x++) {
                     float tmp_dist = 0;
 
                     for (int d = 0; d < dim; d++) {
