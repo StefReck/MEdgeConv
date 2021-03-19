@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras as ks
 import tensorflow.keras.layers as layers
-from . import util_disjoint
+import medgeconv.util_disjoint as util_disjoint
 
 
 class DisjointEdgeConv:

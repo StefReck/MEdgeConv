@@ -122,11 +122,12 @@ To load models, use the custom_objects:
 knn_graph kernel
 ----------------
 
-This package includes a cuda kernel for calculating k-nearest neighbors
+This package includes a cuda kernel for calculating the k nearest neighbors
 on a batch of graphs. It comes with a precompiled kernel for the version of
 tensorflow specified in requirements.txt.
+
 To compile it locally, e.g. for a different version of
-tensorflow, go to `medgeconv/knn_graph` and run `make clean` and then `make`.
-This will produce the file `medgeconv/knn_graph/python/ops/_knn_graph_ops.so`.
+tensorflow, go to ``medgeconv/knn_graph`` and run ``make clean`` and then ``make``.
+This will produce the file ``medgeconv/knn_graph/python/ops/_knn_graph_ops.so``.
 For details on how to setup the docker environment for compiling,
 see https://github.com/tensorflow/custom-op .

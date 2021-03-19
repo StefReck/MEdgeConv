@@ -30,11 +30,9 @@ def knn_graph(nodes, n_nodes_per_graph, k):
     Returns
     -------
     indices : tf.Tensor
-        The nearest neighbor indices. Shape (n_nodes * k, ).
-        Use tf.reshape(indices, (-1, k) to get into 2d shape.
+        The nearest neighbor indices. Shape (n_nodes, k), int32.
     dists : tf.Tensor
-        The distances to the neighbors. Shape (n_nodes+k, ).
-        Use tf.reshape(indices, (-1, k) to get into 2d shape.
+        The distances to the neighbors. Shape (n_nodes, k), float32.
 
     """
     x_ptr = tf.concat([[0, ], tf.math.cumsum(n_nodes_per_graph)], axis=0)

@@ -1,1 +1,1 @@
-from .appli import custom_objects, DisjointEdgeConvBlock
+from medgeconv.appli import custom_objects, DisjointEdgeConvBlock
