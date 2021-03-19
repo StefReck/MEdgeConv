@@ -1,5 +1,5 @@
 import tensorflow as tf
-from . import layers, layers_disjoint
+from . import layers_disjoint
 
 
 class DisjointEdgeConvBlock(layers_disjoint.DisjointEdgeConv):
@@ -58,10 +58,6 @@ class DisjointEdgeConvBlock(layers_disjoint.DisjointEdgeConv):
 
 
 custom_objects = {
-    # m:
-    "GlobalAvgValidPooling": layers.GlobalAvgValidPooling,
-    "GetEdgeFeatures": layers.GetEdgeFeatures,
-    # disjoint:
     "GlobalAvgPoolingDisjoint": layers_disjoint.GlobalAvgPoolingDisjoint,
     "GetEdgeFeaturesDisjoint": layers_disjoint.GetEdgeFeaturesDisjoint,
     "DenseToDisjoint": layers_disjoint.DenseToDisjoint,
