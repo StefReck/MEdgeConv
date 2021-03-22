@@ -1,14 +1,27 @@
 import tensorflow as tf
-from . import layers, layers_disjoint
+import medgeconv.layers as layers
 
 
-class DisjointEdgeConvBlock(layers_disjoint.DisjointEdgeConv):
+class DisjointEdgeConvBlock:
     """
-    DisjointEdgeConv with additional options as used in the ParticleNet
+    EdgeConv with additional options as used in the ParticleNet
     paper.
 
     Parameters
     ----------
+    units : List or int
+        How many dense layers are in the kernel network, and how many
+        neurons does each of them have? E.g. [64, 64] means two dense
+        layers with 64 neurons each.
+    next_neighbors : int
+        How many next neighbors to construct the edge features with for
+        each node.
+    kernel_initializer : str
+        For the kernel network.
+    activation : str
+        For the kernel network.
+    shortcut : bool
+        Add a shortcut connection between input and output?
     to_disjoint : bool
         Start by transforming dense input to disjoint.
         Has to be used if this is the first layer.
@@ -28,41 +41,38 @@ class DisjointEdgeConvBlock(layers_disjoint.DisjointEdgeConv):
                  to_disjoint=False,
                  batchnorm_for_nodes=False,
                  pooling=False):
-        super().__init__(
+        self.to_disjoint = to_disjoint
+        self.batchnorm_for_nodes = batchnorm_for_nodes
+        self.pooling = pooling
+
+        self.edgeconv = layers.DisjointEdgeConv(
             units=units,
             next_neighbors=next_neighbors,
             kernel_initializer=kernel_initializer,
             activation=activation,
             shortcut=shortcut,
         )
-        self.to_disjoint = to_disjoint
-        self.batchnorm_for_nodes = batchnorm_for_nodes
-        self.pooling = pooling
 
     def __call__(self, x):
         nodes, is_valid, coordinates = x
 
         if self.to_disjoint:
-            nodes, is_valid, coordinates = layers_disjoint.DenseToDisjoint()(
+            nodes, is_valid, coordinates = layers.DenseToDisjoint()(
                 (nodes, is_valid, coordinates))
 
         if self.batchnorm_for_nodes:
             nodes = tf.keras.layers.BatchNormalization()(nodes)
 
-        nodes = super().__call__((nodes, is_valid, coordinates))
+        nodes = self.edgeconv((nodes, is_valid, coordinates))
 
         if self.pooling:
-            return layers_disjoint.GlobalAvgPoolingDisjoint()((nodes, is_valid))
+            return layers.GlobalAvgPoolingDisjoint()((nodes, is_valid))
         else:
             return nodes, is_valid, nodes
 
 
 custom_objects = {
-    # m:
-    "GlobalAvgValidPooling": layers.GlobalAvgValidPooling,
-    "GetEdgeFeatures": layers.GetEdgeFeatures,
-    # disjoint:
-    "GlobalAvgPoolingDisjoint": layers_disjoint.GlobalAvgPoolingDisjoint,
-    "GetEdgeFeaturesDisjoint": layers_disjoint.GetEdgeFeaturesDisjoint,
-    "DenseToDisjoint": layers_disjoint.DenseToDisjoint,
+    "GlobalAvgPoolingDisjoint": layers.GlobalAvgPoolingDisjoint,
+    "GetEdgeFeaturesDisjoint": layers.GetEdgeFeaturesDisjoint,
+    "DenseToDisjoint": layers.DenseToDisjoint,
 }

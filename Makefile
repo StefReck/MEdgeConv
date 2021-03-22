@@ -9,3 +9,5 @@ test:
 
 test-cov:
 	pytest --cov=./
+
+.PHONY: install dependencies test test-cov
