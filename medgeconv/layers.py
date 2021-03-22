@@ -1,7 +1,7 @@
 import tensorflow as tf
 import tensorflow.keras as ks
 import tensorflow.keras.layers as layers
-import medgeconv.util_disjoint as util_disjoint
+import medgeconv.util as util
 
 
 class DisjointEdgeConv:
@@ -126,13 +126,13 @@ class GetEdgeFeaturesDisjoint(ks.layers.Layer):
     def call(self, inputs):
         nodes_disjoint, is_valid, coordinates_disjoint = inputs
         # get the k nearest neighbours for each node
-        knn_disjoint = util_disjoint.get_knn_from_disjoint(
+        knn_disjoint = util.get_knn_from_disjoint(
             coordinates_disjoint,
             self.next_neighbors,
             is_valid=is_valid,
         )
         # get central and neighbour point for each edge between neighbours
-        return util_disjoint.get_xixj_disjoint(
+        return util.get_xixj_disjoint(
             nodes_disjoint, knn_disjoint, k=self.next_neighbors)
 
     def compute_output_shape(self, input_shape):
@@ -182,7 +182,7 @@ class GlobalAvgPoolingDisjoint(ks.layers.Layer):
     """
     def call(self, inputs):
         nodes_disjoint, is_valid = inputs
-        return util_disjoint.reduce_mean_valid_disjoint(
+        return util.reduce_mean_valid_disjoint(
             nodes_disjoint, is_valid)
 
     def compute_output_shape(self, input_shape):

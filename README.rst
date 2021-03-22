@@ -38,7 +38,8 @@ Use e.g. like this:
         units=[64, 64, 64],
         next_neighbors=16,
         to_disjoint=True,
-        pooling=True)((nodes, is_valid, coordinates))
+        pooling=True,
+    )((nodes, is_valid, coordinates))
 
 
 Inputs to EdgeConv are 3 dense tensors: nodes, is_valid and coordinates
@@ -70,11 +71,13 @@ Example for batchsize = 2, n_nodes_max = 4, n_features = 2:
        [[0., 2.],
         [3., 7.],
         [4., 0.],
-        [1., 2.]]])
+        [1., 2.]],
+    ])
 
     is_valid = np.array([
         [1, 1, 0, 0],  # <-- 0 defines these nodes as padded
-        [1, 1, 1, 1]])
+        [1, 1, 1, 1],
+    ])
 
     coordinates = nodes
 
@@ -97,14 +100,17 @@ A full model could look like this:
     x = medgeconv.DisjointEdgeConvBlock(
         units=[64, 64, 64],
         to_disjoint=True,
-        batchnorm_for_nodes=True)(inp)
+        batchnorm_for_nodes=True,
+    )(inp)
 
     x = medgeconv.DisjointEdgeConvBlock(
-        units=[128, 128, 128])(x)
+        units=[128, 128, 128],
+    )(x)
 
     x = medgeconv.DisjointEdgeConvBlock(
         units=[256, 256, 256],
-        pooling=True)(x)
+        pooling=True,
+    )(x)
 
     output = tf.keras.layers.Dense(2)(x)
     model = tf.keras.Model(inp, output)
@@ -127,7 +133,7 @@ on a batch of graphs. It comes with a precompiled kernel for the version of
 tensorflow specified in requirements.txt.
 
 To compile it locally, e.g. for a different version of
-tensorflow, go to ``medgeconv/knn_graph`` and run ``make clean`` and then ``make``.
-This will produce the file ``medgeconv/knn_graph/python/ops/_knn_graph_ops.so``.
+tensorflow, go to ``medgeconv/tf_ops`` and run ``make clean`` and then ``make``.
+This will produce the file ``medgeconv/tf_ops/python/ops/_knn_graph_ops.so``.
 For details on how to setup the docker environment for compiling,
 see https://github.com/tensorflow/custom-op .

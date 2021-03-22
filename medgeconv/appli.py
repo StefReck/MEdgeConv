@@ -1,5 +1,5 @@
 import tensorflow as tf
-import medgeconv.layers_disjoint as layers_disjoint
+import medgeconv.layers as layers
 
 
 class DisjointEdgeConvBlock:
@@ -45,7 +45,7 @@ class DisjointEdgeConvBlock:
         self.batchnorm_for_nodes = batchnorm_for_nodes
         self.pooling = pooling
 
-        self.edgeconv = layers_disjoint.DisjointEdgeConv(
+        self.edgeconv = layers.DisjointEdgeConv(
             units=units,
             next_neighbors=next_neighbors,
             kernel_initializer=kernel_initializer,
@@ -57,7 +57,7 @@ class DisjointEdgeConvBlock:
         nodes, is_valid, coordinates = x
 
         if self.to_disjoint:
-            nodes, is_valid, coordinates = layers_disjoint.DenseToDisjoint()(
+            nodes, is_valid, coordinates = layers.DenseToDisjoint()(
                 (nodes, is_valid, coordinates))
 
         if self.batchnorm_for_nodes:
@@ -66,13 +66,13 @@ class DisjointEdgeConvBlock:
         nodes = self.edgeconv((nodes, is_valid, coordinates))
 
         if self.pooling:
-            return layers_disjoint.GlobalAvgPoolingDisjoint()((nodes, is_valid))
+            return layers.GlobalAvgPoolingDisjoint()((nodes, is_valid))
         else:
             return nodes, is_valid, nodes
 
 
 custom_objects = {
-    "GlobalAvgPoolingDisjoint": layers_disjoint.GlobalAvgPoolingDisjoint,
-    "GetEdgeFeaturesDisjoint": layers_disjoint.GetEdgeFeaturesDisjoint,
-    "DenseToDisjoint": layers_disjoint.DenseToDisjoint,
+    "GlobalAvgPoolingDisjoint": layers.GlobalAvgPoolingDisjoint,
+    "GetEdgeFeaturesDisjoint": layers.GetEdgeFeaturesDisjoint,
+    "DenseToDisjoint": layers.DenseToDisjoint,
 }

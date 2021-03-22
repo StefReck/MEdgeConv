@@ -1,5 +1,5 @@
 import tensorflow as tf
-from medgeconv import util_disjoint
+from medgeconv import util
 
 
 class TestTFFunctions(tf.test.TestCase):
@@ -16,7 +16,7 @@ class TestTFFunctions(tf.test.TestCase):
             [2, 1], [2, 0], [1, 0],
             [6, 4], [5, 6], [4, 6], [3, 4],
         ], dtype="int32")
-        result = util_disjoint.get_knn_from_disjoint(points, k=2, is_valid=is_valid)
+        result = util.get_knn_from_disjoint(points, k=2, is_valid=is_valid)
         self.assertAllEqual(result, target)
 
     def test_get_knn_from_points_too_few_neighbors(self):
@@ -29,7 +29,7 @@ class TestTFFunctions(tf.test.TestCase):
             [1, 1, 1, 1],
         ], dtype="int32")
         with self.assertRaises(tf.errors.InvalidArgumentError):
-            util_disjoint.get_knn_from_disjoint(points, k=2, is_valid=is_valid)
+            util.get_knn_from_disjoint(points, k=2, is_valid=is_valid)
 
     def test_get_knn_from_points_eager(self):
         """ map_fn turns the func into a tf.function apparently """
@@ -52,7 +52,7 @@ class TestTFFunctions(tf.test.TestCase):
             [2, 3],
             [12, 13],
         ], dtype="float32")
-        result = util_disjoint.reduce_mean_valid_disjoint(
+        result = util.reduce_mean_valid_disjoint(
             points, is_valid=is_valid)
         self.assertAllClose(result, target)
 
@@ -61,7 +61,7 @@ class TestTFFunctions(tf.test.TestCase):
             [1, 1, 0, 0],
             [1, 1, 1, 1]
         ], dtype="int32")
-        graph_ids = util_disjoint.get_graph_ids(is_valid)
+        graph_ids = util.get_graph_ids(is_valid)
 
         target = tf.constant([0, 0, 1, 1, 1, 1], dtype="int32")
         self.assertAllEqual(graph_ids, target)

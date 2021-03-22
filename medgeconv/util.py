@@ -1,5 +1,5 @@
 import tensorflow as tf
-from medgeconv.knn_graph import knn_graph
+from medgeconv.tf_ops import knn_graph
 
 
 def get_knn_from_disjoint(nodes, k, is_valid):
