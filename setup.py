@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from setuptools import setup
+from setuptools import setup, find_packages
 
 with open('requirements.txt') as fobj:
     requirements = [l.strip() for l in fobj.readlines()]
@@ -15,5 +15,7 @@ setup(
     setup_requires=['setuptools_scm'],
     use_scm_version=True,
     install_requires=requirements,
-    packages=["medgeconv"],
+    packages=find_packages(exclude=("tests", )),
+    include_package_data=True,
+    license='MIT',
 )
