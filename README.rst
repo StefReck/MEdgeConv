@@ -133,7 +133,6 @@ on a batch of graphs. It comes with a precompiled kernel for the version of
 tensorflow specified in requirements.txt.
 
 To compile it locally, e.g. for a different version of
-tensorflow, go to ``medgeconv/tf_ops`` and run ``make clean`` and then ``make``.
-This will produce the file ``medgeconv/tf_ops/python/ops/_knn_graph_ops.so``.
-For details on how to setup the docker environment for compiling,
-see https://github.com/tensorflow/custom-op .
+tensorflow, go to ``medgeconv/tf_ops`` and adjust the ``compile.sh`` bash script.
+Running it will download the specified tf dev docker image and produce the
+file ``medgeconv/tf_ops/python/ops/_knn_graph_ops.so``.

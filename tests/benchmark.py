@@ -7,6 +7,14 @@ Per batch: 235.7 ms
 Per sample: 3.6833 ms
    median: 3.7010 ms
 
+TF 2.5 (GTX 1080)
+-----------------
+Total time: 23.7269 s
+Per batch: 239.7 ms
+   median: 238.4 ms
+Per sample: 3.7448 ms
+   median: 3.7243 ms
+
 """
 
 import time
