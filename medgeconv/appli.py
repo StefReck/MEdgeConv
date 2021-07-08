@@ -4,8 +4,7 @@ import medgeconv.layers as layers
 
 class DisjointEdgeConvBlock:
     """
-    EdgeConv with additional options as used in the ParticleNet
-    paper.
+    EdgeConv with additional options as used in the ParticleNet paper.
 
     Parameters
     ----------
@@ -22,9 +21,6 @@ class DisjointEdgeConvBlock:
         For the kernel network.
     shortcut : bool
         Add a shortcut connection between input and output?
-    to_disjoint : bool
-        Start by transforming dense input to disjoint.
-        Has to be used if this is the first layer.
     batchnorm_for_nodes : bool
         Use batchnorm layers for node features?
         Recommended for first layer.
@@ -38,10 +34,8 @@ class DisjointEdgeConvBlock:
                  kernel_initializer="glorot_uniform",
                  activation="relu",
                  shortcut=True,
-                 to_disjoint=False,
                  batchnorm_for_nodes=False,
                  pooling=False):
-        self.to_disjoint = to_disjoint
         self.batchnorm_for_nodes = batchnorm_for_nodes
         self.pooling = pooling
 
@@ -54,21 +48,17 @@ class DisjointEdgeConvBlock:
         )
 
     def __call__(self, x):
-        nodes, is_valid, coordinates = x
-
-        if self.to_disjoint:
-            nodes, is_valid, coordinates = layers.DenseToDisjoint()(
-                (nodes, is_valid, coordinates))
+        nodes, coordinates = x
 
         if self.batchnorm_for_nodes:
             nodes = tf.keras.layers.BatchNormalization()(nodes)
 
-        nodes = self.edgeconv((nodes, is_valid, coordinates))
+        nodes = self.edgeconv((nodes, coordinates))
 
         if self.pooling:
-            return layers.GlobalAvgPoolingDisjoint()((nodes, is_valid))
+            return tf.keras.layers.GlobalAvgPool1D()(nodes)
         else:
-            return nodes, is_valid, nodes
+            return nodes, nodes
 
 
 custom_objects = {

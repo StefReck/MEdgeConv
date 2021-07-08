@@ -7,20 +7,8 @@ import medgeconv.util as util
 class DisjointEdgeConv:
     """
     The EdgeConv layer like it is used in ParticleNet, implemented
-    as a pseudo-block and expecting disjoint input.
+    as a pseudo-block and expecting ragged inputs.
     Has a dense network as the kernel network.
-
-    Input: (nodes, is_valid, coordinates)
-
-    nodes, shape (batchsize, n_nodes_max, n_features)
-        Node features of the graph, padded to fixed size.
-    is_valid, shape (batchsize, n_nodes_max)
-        1 for actual node, 0 for padded node.
-    coordinates, shape (batchsize, n_nodes_max, n_coords)
-        Features of each node used for calculating nearest
-        neighbors.
-
-    Output, shape (batchsize, n_nodes_max, units[-1])
 
     Parameters
     ----------
@@ -56,13 +44,31 @@ class DisjointEdgeConv:
             activation=self.activation)
 
     def __call__(self, inputs):
-        nodes_disjoint, is_valid, coordinates_disjoint = inputs
+        """
+        Parameters
+        ----------
+        inputs : tuple
+            Length 2: (nodes, coordinates).
+            nodes: tf.RaggedTensor
+                shape (batchsize, None, n_features)
+                Node features of the graph.
+            coordinates: tf.RaggedTensor
+                shape (batchsize, None, n_coords)
+                Features of each node used for calculating nearest neighbors.
+
+        Returns
+        -------
+        tf.RaggedTensor
+            shape (batchsize, None, units[-1])
+
+        """
+        nodes, coordinates = inputs
 
         # get central and neighbour point features for each edge
         # between neighbours, defined by coordinates
         xi_xj = GetEdgeFeaturesDisjoint(
             next_neighbors=self.next_neighbors,
-        )((nodes_disjoint, is_valid, coordinates_disjoint))
+        )((nodes, coordinates))
 
         x = self.get_edges(xi_xj)
         # apply MLP on points of each edge
@@ -70,13 +76,16 @@ class DisjointEdgeConv:
         # aggregate over the nearest neighbours
         x = ks.backend.mean(x, axis=-2)
 
+        row_splits = nodes.nested_row_splits[0]
+
         if self.shortcut:
+            nodes_disjoint = nodes.merge_dims(0, 1)
             sc = ks.layers.Dense(
                 self.units[-1], use_bias=False,
                 kernel_initializer=self.kernel_initializer)(nodes_disjoint)
             sc = ks.layers.BatchNormalization()(sc)
             x = ks.layers.Activation(self.activation)(sc + x)
-
+        x = tf.RaggedTensor.from_row_splits(x, row_splits)
         return x
 
     @staticmethod
@@ -124,15 +133,15 @@ class GetEdgeFeaturesDisjoint(ks.layers.Layer):
         self.next_neighbors = next_neighbors
 
     def call(self, inputs):
-        nodes_disjoint, is_valid, coordinates_disjoint = inputs
+        nodes, coordinates = inputs
         # get the k nearest neighbours for each node
-        knn_disjoint = util.get_knn_from_disjoint(
-            coordinates_disjoint,
+        knn_disjoint = util.get_knn(
+            coordinates,
             self.next_neighbors,
-            is_valid=is_valid,
         )
+        nodes_disjoint = nodes.merge_dims(0, 1)
         # get central and neighbour point for each edge between neighbours
-        return util.get_xixj_disjoint(
+        return util.get_xixj(
             nodes_disjoint, knn_disjoint, k=self.next_neighbors)
 
     def compute_output_shape(self, input_shape):
@@ -142,19 +151,6 @@ class GetEdgeFeaturesDisjoint(ks.layers.Layer):
         config = super().get_config()
         config["next_neighbors"] = self.next_neighbors
         return config
-
-
-class DenseToDisjoint(ks.layers.Layer):
-    """ (batchsize, n_nodes, n_features) --> (None, n_features) """
-    def call(self, inputs):
-        nodes, is_valid, coordinates = inputs
-        is_valid = tf.cast(is_valid, "int32")
-
-        valid_indices = tf.where(is_valid == 1)
-        nodes_disjoint = tf.gather_nd(nodes, valid_indices)
-        coordinates_disjoint = tf.gather_nd(coordinates, valid_indices)
-
-        return nodes_disjoint, is_valid, coordinates_disjoint
 
 
 def kernel_nn(x, units, activation="relu", kernel_initializer='glorot_uniform'):
@@ -170,6 +166,21 @@ def kernel_nn(x, units, activation="relu", kernel_initializer='glorot_uniform'):
     return x
 
 
+# legacy; backward compatibility
+class DenseToDisjoint(ks.layers.Layer):
+    """ (batchsize, n_nodes, n_features) --> (None, n_features) """
+    def call(self, inputs):
+        nodes, is_valid, coordinates = inputs
+        is_valid = tf.cast(is_valid, "int32")
+
+        valid_indices = tf.where(is_valid == 1)
+        nodes_disjoint = tf.gather_nd(nodes, valid_indices)
+        coordinates_disjoint = tf.gather_nd(coordinates, valid_indices)
+
+        return nodes_disjoint, is_valid, coordinates_disjoint
+
+
+# legacy; backward compatibility
 class GlobalAvgPoolingDisjoint(ks.layers.Layer):
     """
     An average valid pooling layer.
