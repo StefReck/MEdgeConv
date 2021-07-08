@@ -36,32 +36,3 @@ class TestTFFunctions(tf.test.TestCase):
             self.test_get_knn_from_points()
         finally:
             tf.config.run_functions_eagerly(False)
-
-    # legacy; for backward compatibility
-    def test_reduce_mean_valid(self):
-        points = tf.constant([
-            [1, 2], [3, 4],
-            [9, 10], [11, 12], [13, 14], [15, 16],
-        ], dtype="float32")
-        is_valid = tf.constant([
-            [1, 1, 0, 0],
-            [1, 1, 1, 1]
-        ], dtype="int32")
-        target = tf.constant([
-            [2, 3],
-            [12, 13],
-        ], dtype="float32")
-        result = util.reduce_mean_valid_disjoint(
-            points, is_valid=is_valid)
-        self.assertAllClose(result, target)
-
-    # legacy; backward compatibility
-    def test_get_graph_ids(self):
-        is_valid = tf.constant([
-            [1, 1, 0, 0],
-            [1, 1, 1, 1]
-        ], dtype="int32")
-        graph_ids = util.get_graph_ids(is_valid)
-
-        target = tf.constant([0, 0, 1, 1, 1, 1], dtype="int32")
-        self.assertAllEqual(graph_ids, target)
