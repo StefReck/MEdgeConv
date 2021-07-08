@@ -8,6 +8,6 @@ test:
 	pytest
 
 test-cov:
-	pytest --cov=./
+	pytest --cov=./ --cov-report=xml
 
 .PHONY: install dependencies test test-cov
