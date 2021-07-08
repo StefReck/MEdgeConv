@@ -15,6 +15,14 @@ Per batch: 239.7 ms
 Per sample: 3.7448 ms
    median: 3.7243 ms
 
+TF 2.5 & MEdgeconv 1.2 (ragged) (GTX 1080)
+-----------------
+Total time: 19.8413 s
+Per batch: 200.4 ms
+   median: 197.4 ms
+Per sample: 3.1315 ms
+   median: 3.0845 ms
+
 """
 
 import time

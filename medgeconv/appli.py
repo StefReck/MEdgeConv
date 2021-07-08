@@ -1,5 +1,6 @@
 import tensorflow as tf
 import medgeconv.layers as layers
+import medgeconv.legacy.layers as layers_legacy
 
 
 class DisjointEdgeConvBlock:
@@ -65,7 +66,9 @@ class DisjointEdgeConvBlock:
 
 
 custom_objects = {
-    "GlobalAvgPoolingDisjoint": layers.GlobalAvgPoolingDisjoint,
-    "GetEdgeFeaturesDisjoint": layers.GetEdgeFeaturesDisjoint,
-    "DenseToDisjoint": layers.DenseToDisjoint,
+    "GetEdgeFeatures": layers.GetEdgeFeatures,
+    # legacy:
+    "GlobalAvgPoolingDisjoint": layers_legacy.GlobalAvgPoolingDisjoint,
+    "GetEdgeFeaturesDisjoint": layers_legacy.GetEdgeFeaturesDisjoint,
+    "DenseToDisjoint": layers_legacy.DenseToDisjoint,
 }

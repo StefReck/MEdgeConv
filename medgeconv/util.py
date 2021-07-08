@@ -68,35 +68,3 @@ def get_xixj(nodes_disjoint, knn, k):
     nodes_neighbors = tf.gather(nodes_disjoint, knn)
 
     return nodes_central, nodes_neighbors
-
-
-# legacy; backward compatibility
-def reduce_mean_valid_disjoint(nodes, is_valid):
-    """
-    Average over valid nodes.
-
-    Parameters
-    ----------
-    nodes : tf.Tensor
-        shape (None, n_features)
-    is_valid : tf.Tensor
-        int32 tensor shape (bs, n_points).
-
-    Returns
-    -------
-    shape (bs, n_features)
-        For each feature, aggeregated over all valid nodes.
-
-    """
-    graph_ids = get_graph_ids(is_valid)
-    pooled = tf.math.segment_mean(nodes, graph_ids)
-    pooled.set_shape(is_valid.shape[:1] + pooled.shape[1:])
-    return pooled
-
-
-# legacy; backward compatibility
-def get_graph_ids(is_valid):
-    """ Shape (None,). To which graph each node belongs to."""
-    return tf.gather_nd(
-        is_valid * tf.expand_dims(tf.range(tf.shape(is_valid)[0]), -1),
-        tf.where(is_valid == 1))
