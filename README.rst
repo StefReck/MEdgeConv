@@ -14,11 +14,7 @@ An efficient tensorflow 2 implementation of the edge-convolution layer
 EdgeConv used in e.g. ParticleNet.
 
 The structure of the layer is as described in 'ParticleNet: Jet Tagging
-via Particle Clouds'
-https://arxiv.org/abs/1902.08570. Graphs often have a varying number
-of nodes. By making use of the disjoint union of graphs in a batch,
-memory intensive operations in this implementation
-are done only on the actual nodes (and not the padded ones).
+via Particle Clouds' https://arxiv.org/abs/1902.08570.
 
 Instructions
 ------------
@@ -37,84 +33,84 @@ Use e.g. like this:
     nodes = medgeconv.DisjointEdgeConvBlock(
         units=[64, 64, 64],
         next_neighbors=16,
-        to_disjoint=True,
-        pooling=True,
-    )((nodes, is_valid, coordinates))
+    )((nodes, coordinates))
 
 
-Inputs to EdgeConv are 3 dense tensors: nodes, is_valid and coordinates
+Inputs to EdgeConv are 2 ragged tensors: nodes and coordinates
 
-- nodes, shape (batchsize, n_nodes_max, n_features)
-    Node features of the graph, padded to fixed size.
-    Valid nodes have to come first, then the padded nodes.
+- nodes, shape (batchsize, None, n_features)
+    Node features of the graph. Secound dimension is the number of nodes,
+    which can vary from graph to graph.
 
-- is_valid, shape (batchsize, n_nodes_max)
-    1 for actual node, 0 for padded node.
+- coordinates, shape (batchsize, None, n_coords)
+    Features of each node used for calculating nearest neighbors.
 
-- coordinates, shape (batchsize, n_nodes_max, n_coords)
-    Features of each node used for calculating nearest
-    neighbors.
 
-Examples
---------
-
-Example for batchsize = 2, n_nodes_max = 4, n_features = 2:
+Example: Input for a graph with 2 features per node, and all node features
+used as coordinates.
 
 .. code-block:: python
+    import tensorflow as tf
 
-    nodes = np.array([
+    nodes = tf.ragged.constant([
+       # graph 1: 2 nodes
        [[2., 4.],
-        [2., 6.],
-        [0., 0.],  # <-- these nodes are padded, their
-        [0., 0.]],  #           value doesn't matter
-
+        [2., 6.]],
+       # graph 2: 4 nodes
        [[0., 2.],
         [3., 7.],
         [4., 0.],
         [1., 2.]],
-    ])
+    ], ragged_rank=1)
 
-    is_valid = np.array([
-        [1, 1, 0, 0],  # <-- 0 defines these nodes as padded
-        [1, 1, 1, 1],
-    ])
+    print(nodes.shape)  # output: (2, None, 2)
 
+    # using all node features as coordinates
     coordinates = nodes
 
+Example
+-------
 
-By using ``to_disjoint = True``, the dense tensors get transformed to
-the disjoint union. The output is also disjoint, so this only needs to be
-done once.
-``pooling = True`` will attach a node-wise global
-average pooling layer in the end, producing dense tensors again.
-
-
-A full model could look like this:
+The full ParticleNet for n_features = n_coords = 2, and a dense layer
+with 2 neurons as the output can be built like this:
 
 .. code-block:: python
 
     import tensorflow as tf
     import medgeconv
 
-    inp = (nodes, is_valid, coordinates)
+    inp = (
+        tf.keras.Input((None, 2), ragged=True),
+        tf.keras.Input((None, 2), ragged=True),
+    )
     x = medgeconv.DisjointEdgeConvBlock(
         units=[64, 64, 64],
-        to_disjoint=True,
         batchnorm_for_nodes=True,
+        next_neighbors=16,
     )(inp)
 
     x = medgeconv.DisjointEdgeConvBlock(
         units=[128, 128, 128],
+        next_neighbors=16,
     )(x)
 
     x = medgeconv.DisjointEdgeConvBlock(
         units=[256, 256, 256],
+        next_neighbors=16,
         pooling=True,
     )(x)
 
     output = tf.keras.layers.Dense(2)(x)
     model = tf.keras.Model(inp, output)
 
+
+The last EdgeConv layer has ``pooling = True``.
+This will attach a node-wise global
+average pooling layer in the end, producing normal not-ragged tensors again.
+
+
+Loading models
+--------------
 
 To load models, use the custom_objects:
 

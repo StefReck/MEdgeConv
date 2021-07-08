@@ -108,10 +108,9 @@ class GetEdgeFeaturesDisjoint(ks.layers.Layer):
     Get the edge features of the graph.
 
     Input shape:
-        [(None, n_features),
-         (bs, n_nodes),
-         (None, n_coordinates)]
-        --> [nodes, is_valid, coordinates]
+        [(None, None, n_features),
+         (None, None, n_coordinates)]
+        --> [nodes, coordinates]
         - all the nodes of the graph, together with their features
         - Info about which nodes are valid nodes
         - Coordinates that will be used for calculateing the distance / knn
