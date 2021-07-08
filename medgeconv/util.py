@@ -70,6 +70,7 @@ def get_xixj(nodes_disjoint, knn, k):
     return nodes_central, nodes_neighbors
 
 
+# legacy; backward compatibility
 def reduce_mean_valid_disjoint(nodes, is_valid):
     """
     Average over valid nodes.
@@ -93,6 +94,7 @@ def reduce_mean_valid_disjoint(nodes, is_valid):
     return pooled
 
 
+# legacy; backward compatibility
 def get_graph_ids(is_valid):
     """ Shape (None,). To which graph each node belongs to."""
     return tf.gather_nd(

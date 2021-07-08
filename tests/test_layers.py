@@ -11,16 +11,17 @@ class TestEdgy(tf.test.TestCase):
         self.batchsize = 2
         self.units = [5, 2]
         self.next_neighbors = 3
+        self.n_valid_nodes = [] * self.batchsize
 
-        inp_points = tf.keras.layers.Input((self.n_points, self.n_features), batch_size=self.batchsize)
-        inp_valid = tf.keras.layers.Input((self.n_points, ), batch_size=self.batchsize)
-        inp_coords = tf.keras.layers.Input((self.n_points, self.n_coords), batch_size=self.batchsize)
-        self.inps = (inp_points, inp_valid, inp_coords)
+        inp_points = tf.keras.layers.Input(
+            (None, self.n_features), ragged=True)
+        inp_coords = tf.keras.layers.Input(
+            (None, self.n_coords), ragged=True)
+        self.inps = (inp_points, inp_coords)
         self.edge_layer = medgeconv.DisjointEdgeConvBlock(
             units=self.units,
             next_neighbors=self.next_neighbors,
             kernel_initializer="ones",
-            to_disjoint=True,
             pooling=True,
         )
         self.edge_out = self.edge_layer(self.inps)
@@ -28,26 +29,18 @@ class TestEdgy(tf.test.TestCase):
 
         points = np.arange(
             self.batchsize * self.n_points * self.n_features).reshape(
-            *self.model.input_shape[0]).astype("float32")
-        is_valid = np.ones((self.batchsize, self.n_points), dtype="float32")
-        is_valid[:, -1] = 0
+            (self.batchsize, self.n_points, self.n_features)).astype("float32")
+        points = tf.RaggedTensor.from_tensor(points[:, :-1])
         coords = points[:, :, :self.n_coords]
-        self.x = points, is_valid, coords
+        self.x = points, coords
         self.y = np.zeros((self.batchsize, self.units[-1]))
 
     def test_output_shape(self):
         self.assertTupleEqual(
-            self.model.output_shape, (self.batchsize, self.units[-1]))
+            self.model.output_shape, (None, self.units[-1]))
 
     def test_output(self):
-        points = np.arange(
-            self.batchsize * self.n_points * self.n_features).reshape(
-            *self.model.input_shape[0]).astype("float32")
-        is_valid = np.ones((self.batchsize, self.n_points))
-        is_valid[:, -1] = 0
-        coords = points[:, :, :self.n_coords]
-
-        output = self.model.predict((points, is_valid, coords))
+        output = self.model.predict(self.x)
         target = np.array([
             [216.46521, 216.46521],
             [659.3956, 659.3956]], dtype="float32")
