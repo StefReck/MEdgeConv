@@ -13,7 +13,9 @@ setup(
     author_email='stefan.reck@fau.de',
     long_description=long_description,
     setup_requires=['setuptools_scm'],
-    use_scm_version=True,
+    use_scm_version={
+        "local_scheme": "no-local-version",
+    },
     install_requires=requirements,
     packages=find_packages(exclude=("tests", )),
     include_package_data=True,
