@@ -50,6 +50,7 @@ Example: Input for a graph with 2 features per node, and all node features
 used as coordinates.
 
 .. code-block:: python
+
     import tensorflow as tf
 
     nodes = tf.ragged.constant([
