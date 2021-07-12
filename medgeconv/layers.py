@@ -75,8 +75,6 @@ class DisjointEdgeConv:
         # aggregate over the nearest neighbours
         x = ks.backend.mean(x, axis=-2)
 
-        row_splits = nodes.nested_row_splits[0]
-
         if self.shortcut:
             nodes_disjoint = nodes.merge_dims(0, 1)
             sc = ks.layers.Dense(
@@ -84,7 +82,7 @@ class DisjointEdgeConv:
                 kernel_initializer=self.kernel_initializer)(nodes_disjoint)
             sc = ks.layers.BatchNormalization()(sc)
             x = ks.layers.Activation(self.activation)(sc + x)
-        x = tf.RaggedTensor.from_row_splits(x, row_splits)
+        x = tf.RaggedTensor.from_row_splits(x, nodes.row_splits)
         return x
 
     @staticmethod

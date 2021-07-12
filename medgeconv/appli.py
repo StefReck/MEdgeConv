@@ -52,10 +52,9 @@ class DisjointEdgeConvBlock:
         nodes, coordinates = x
 
         if self.batchnorm_for_nodes:
-            row_splits = nodes.nested_row_splits[0]
             nodes_disjoint = nodes.merge_dims(0, 1)
             nodes_disjoint = tf.keras.layers.BatchNormalization()(nodes_disjoint)
-            nodes = tf.RaggedTensor.from_row_splits(nodes_disjoint, row_splits)
+            nodes = tf.RaggedTensor.from_row_splits(nodes_disjoint, nodes.row_splits)
 
         nodes = self.edgeconv((nodes, coordinates))
 
