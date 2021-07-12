@@ -109,6 +109,13 @@ The last EdgeConv layer has ``pooling = True``.
 This will attach a node-wise global
 average pooling layer in the end, producing normal not-ragged tensors again.
 
+The model can then be used on ragged Tensors:
+
+.. code-block:: python
+
+    nodes = tf.RaggedTensor.from_tensor(tf.ones((3, 17, 2)))
+    model.predict((nodes, nodes))
+
 
 Loading models
 --------------
