@@ -15,6 +15,14 @@ Per batch: 239.7 ms
 Per sample: 3.7448 ms
    median: 3.7243 ms
 
+TF 2.5 & MEdgeconv 1.2 (ragged) (GTX 1080)
+-----------------
+Total time: 19.8413 s
+Per batch: 200.4 ms
+   median: 197.4 ms
+Per sample: 3.1315 ms
+   median: 3.0845 ms
+
 """
 
 import time
@@ -34,15 +42,13 @@ N_NODES_OUTPUT = 2
 
 def get_model():
     inps = (
-        tf.keras.layers.Input((N_POINTS_MAX, N_FEATURES)),
-        tf.keras.layers.Input((N_POINTS_MAX,)),
-        tf.keras.layers.Input((N_POINTS_MAX, N_COORDS))
+        tf.keras.layers.Input((None, N_FEATURES), ragged=True),
+        tf.keras.layers.Input((None, N_COORDS), ragged=True)
     )
     x = DisjointEdgeConvBlock(
         units=UNITS,
         next_neighbors=NEXT_NEIGHBORS,
         kernel_initializer="ones",
-        to_disjoint=True,
         pooling=True,
     )(inps)
     x = tf.keras.layers.Dense(N_NODES_OUTPUT)(x)
@@ -68,19 +74,16 @@ class DataGenerator(tf.keras.utils.Sequence):
 
 def get_data(batches=10):
     """ Get all batches of data. Number of valid nodes is varied per graph. """
-    points = np.random.rand(batches*BATCHSIZE, N_POINTS_MAX, N_FEATURES).astype("float32")
-    is_valid = np.zeros((batches*BATCHSIZE, N_POINTS_MAX)).astype("float32")
-    coords = points[:, :, :N_COORDS]
     # number of valid nodes, linearily decreasing
     n_valid_nodes = np.random.triangular(
         NEXT_NEIGHBORS+1, NEXT_NEIGHBORS+1, N_POINTS_MAX+1, batches*BATCHSIZE).astype(int)
     # exponential
     # np.minimum(N_POINTS_MAX+1, np.random.exponential(300, batches*BATCHSIZE)).astype(int) + NEXT_NEIGHBORS+1
+    data = np.random.rand(n_valid_nodes.sum(), N_FEATURES).astype("float32")
+    nodes = tf.RaggedTensor.from_row_lengths(data, n_valid_nodes)
+    coords = nodes[:, :, :N_COORDS]
 
-    for i, l in enumerate(n_valid_nodes):
-        is_valid[i, :l] = 1.
-
-    x = points, is_valid, coords
+    x = nodes, coords
     y = np.zeros((batches*BATCHSIZE, N_NODES_OUTPUT))
     return x, y
 

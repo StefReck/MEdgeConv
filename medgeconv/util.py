@@ -2,7 +2,7 @@ import tensorflow as tf
 from medgeconv.tf_ops import knn_graph
 
 
-def get_knn_from_disjoint(nodes, k, is_valid):
+def get_knn(nodes, k):
     """
     Get the k nearest neighbors depending on distance.
 
@@ -12,8 +12,6 @@ def get_knn_from_disjoint(nodes, k, is_valid):
         shape (None, n_features)
     k : int
         Number of nearest neighbors (excluding self).
-    is_valid : tf.Tensor
-        int32 tensor, shape (bs, n_points).
 
     Returns
     -------
@@ -22,7 +20,8 @@ def get_knn_from_disjoint(nodes, k, is_valid):
         nearest neighbors.
 
     """
-    n_valid_nodes = tf.reduce_sum(is_valid, axis=-1)
+    n_valid_nodes = tf.cast(nodes.nested_row_lengths()[0], "int32")
+    nodes_disjoint = nodes.merge_dims(0, 1)
     assert_op = tf.debugging.assert_greater(
         n_valid_nodes,
         k,
@@ -30,11 +29,11 @@ def get_knn_from_disjoint(nodes, k, is_valid):
                 "k nearest neighbors calculation!"
     )
     with tf.control_dependencies([assert_op]):
-        indices, dists = knn_graph(nodes, n_valid_nodes, k+1)
+        indices, dists = knn_graph(nodes_disjoint, n_valid_nodes, k+1)
     return indices[:, 1:]
 
 
-def get_xixj_disjoint(nodes, knn, k):
+def get_xixj(nodes_disjoint, knn, k):
     """
     Get the features of each edge in the graph.
 
@@ -59,43 +58,13 @@ def get_xixj_disjoint(nodes, knn, k):
 
     """
     nodes_central = tf.tile(
-        tf.expand_dims(nodes, axis=-2),
+        tf.expand_dims(nodes_disjoint, axis=-2),
         [1, k, 1]
     )
 
     # TODO this produces a 'Converting sparse IndexedSlices to a dense Tensor
     #  of unknown shape.' warning. Thats because nodes has an unknown shape
     #  (None, n_features), along first axis is gathered.
-    nodes_neighbors = tf.gather(nodes, knn)
+    nodes_neighbors = tf.gather(nodes_disjoint, knn)
 
     return nodes_central, nodes_neighbors
-
-
-def reduce_mean_valid_disjoint(nodes, is_valid):
-    """
-    Average over valid nodes.
-
-    Parameters
-    ----------
-    nodes : tf.Tensor
-        shape (None, n_features)
-    is_valid : tf.Tensor
-        int32 tensor shape (bs, n_points).
-
-    Returns
-    -------
-    shape (bs, n_features)
-        For each feature, aggeregated over all valid nodes.
-
-    """
-    graph_ids = get_graph_ids(is_valid)
-    pooled = tf.math.segment_mean(nodes, graph_ids)
-    pooled.set_shape(is_valid.shape[:1] + pooled.shape[1:])
-    return pooled
-
-
-def get_graph_ids(is_valid):
-    """ Shape (None,). To which graph each node belongs to."""
-    return tf.gather_nd(
-        is_valid * tf.expand_dims(tf.range(tf.shape(is_valid)[0]), -1),
-        tf.where(is_valid == 1))
