@@ -1,4 +1,4 @@
-# tf dev docker image; see https://hub.docker.com/r/tensorflow/tensorflow/tags/?page=1&ordering=last_updated&name=custom-op-gpu
+# tf dev docker image; see https://hub.docker.com/r/tensorflow/tensorflow/tags/
 DOCKER_IMAGE="tensorflow/tensorflow:2.6.0-gpu"
 
 # fix the 'cuda_fp16.h: No such file or directory' error:
