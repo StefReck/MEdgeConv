@@ -144,5 +144,6 @@ file ``medgeconv/tf_ops/python/ops/_knn_graph_ops.so``.
 Publications
 ------------
 Results using this model architecture in the context of particle
-physics were presented at the ICRC 2021 conference:
-https://doi.org/10.22323/1.395.1048 .
+physics were presented at the ICRC 2021 conference
+https://doi.org/10.22323/1.395.1048 , as well as the
+VLVnT 2021 https://arxiv.org/abs/2107.13375 .
