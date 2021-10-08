@@ -23,7 +23,7 @@ jobs:
       - name: Test with pytest
         run: make test
 
-  test_cov:
+  test-cov:
     runs-on: ubuntu-latest
     needs: test
 
