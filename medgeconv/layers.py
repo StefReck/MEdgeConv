@@ -6,7 +6,7 @@ import medgeconv.util as util
 class DisjointEdgeConv:
     """
     The EdgeConv layer like it is used in ParticleNet, implemented
-    as a pseudo-block and expecting ragged inputs.
+    as a functor and expecting ragged inputs.
     Has a dense network as the kernel network.
 
     Parameters
